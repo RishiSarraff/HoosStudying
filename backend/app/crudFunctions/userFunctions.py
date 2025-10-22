@@ -90,7 +90,8 @@ def delete_user_by_id(db: Session, user_id: int) -> bool:
         db.rollback()
         raise e
     
-# CUSTOM QUERIES: 
+## CUSTOM QUERIES: 
+
+# Get the total number of users:
 def get_user_count(db: Session) -> int:
-    """Get total number of users"""
     return db.query(User).count()
