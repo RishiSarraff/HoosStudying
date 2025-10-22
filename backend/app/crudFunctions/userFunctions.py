@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from app.models import User
-from datetime import datetime
+from sqlalchemy.sql import text
 
 ## CREATE A USER:
 def create_user(db: Session, first_name: str, last_name: str, email: str) -> User:
@@ -26,22 +26,56 @@ def create_user(db: Session, first_name: str, last_name: str, email: str) -> Use
 
 # Get All User:
 def get_all_users(db: Session) -> List[User]:
-    return db.query(User).all()
+    result = db.execute(
+        text("""
+             SELECT *
+             FROM User 
+             """)
+    )
+    users = result.mappings().all()
+    return users
+
 
 # Get User by ID:
 def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
-    return db.query(User).filter(User.user_id == user_id).first()
+    result = db.execute(
+        text("""
+             SELECT * 
+             FROM User 
+             WHERE user_id = :user_id
+             """), 
+        {'user_id': user_id}
+    )
+    user_by_id = result.mappings().first()
+    return user_by_id
 
 # Get User by Email:
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
-    return db.query(User).filter(User.email == email).first()
+    result = db.execute(
+        text("""
+             SELECT *
+             FROM User
+             WHERE email = :email
+             """), 
+        {'email': email}
+    )
+    user_by_email = result.mappings().first()
+    return user_by_email
 
 # Get User by First or Last Name:
 def get_user_by_name(db: Session, name: str) -> List[User]:
     search_pattern = f"%{name}%"
-    return db.query(User).filter(
-        (User.first_name.ilike(search_pattern)) | (User.last_name.ilike(search_pattern))
-    ).all()
+    result = db.execute(
+        text("""
+             SELECT * 
+             FROM User 
+             WHERE first_name LIKE :pattern 
+                OR last_name LIKE :pattern 
+                OR CONCAT(first_name, ' ', last_name) LIKE :pattern
+             """),
+        {'pattern': search_pattern}
+    )
+    return result.mappings().all()
 
 ## UPDATE A USER:
 
