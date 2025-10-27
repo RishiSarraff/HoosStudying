@@ -4,20 +4,36 @@ from app.models import User
 from sqlalchemy.sql import text
 
 ## CREATE A USER:
-def create_user(db: Session, first_name: str, last_name: str, email: str) -> User:
+def create_user(db: Session, first_name: str, last_name: str, email: str):
     try:
-        db_user = User(
-            first_name=first_name,
-            last_name=last_name,
-            email=email
+   
+        result = db.execute(
+            text("""
+                INSERT INTO User (first_name, last_name, email)
+                VALUES (:first_name, :last_name, :email)
+            """),
+            {
+                'first_name': first_name,
+                'last_name': last_name,
+                'email': email
+            }
         )
-
-        db.add(db_user)
-
+        
         db.commit()
-        db.refresh(db_user)
-
-        return db_user
+        
+        user_id = result.lastrowid
+        
+        created_user = db.execute(
+            text("""
+                SELECT * 
+                FROM User 
+                WHERE user_id = :user_id
+            """),
+            {'user_id': user_id}
+        )
+        
+        return created_user.mappings().first()
+        
     except Exception as e:
         db.rollback()
         raise e
@@ -87,19 +103,37 @@ def update_user(db: Session, user_id: int, first_name: Optional[str], last_name:
         if not db_user:
             return None
         
+        # Build dynamic UPDATE query based on which fields are provided
+        update_fields = []
+        params = {'user_id': user_id}
+        
         if first_name is not None:
-            db_user.first_name = first_name
+            update_fields.append("first_name = :first_name")
+            params['first_name'] = first_name
         if last_name is not None:
-            db_user.last_name = last_name
+            update_fields.append("last_name = :last_name")
+            params['last_name'] = last_name
         if email is not None:
-            db_user.email = email
-        if first_name is None and last_name is None and email is None:
+            update_fields.append("email = :email")
+            params['email'] = email
+            
+
+        if not update_fields:
             return db_user
+
+        db.execute(
+            text(f"""
+                 UPDATE User 
+                 SET {', '.join(update_fields)}
+                 WHERE user_id = :user_id
+            """),
+            params
+        )
         
         db.commit()
-        db.refresh(db_user)
+        
 
-        return db_user
+        return get_user_by_id(db, user_id)
 
     except Exception as e:
         db.rollback()
@@ -107,18 +141,26 @@ def update_user(db: Session, user_id: int, first_name: Optional[str], last_name:
 
 ## DELETE A USER:
 
-# Delete User by Id
+
 def delete_user_by_id(db: Session, user_id: int) -> bool:
     try:
-        db_user = get_user_by_id(db, user_id)
 
+        db_user = get_user_by_id(db, user_id)
         if not db_user:
             return False
 
-        db.delete(db_user)
-        db.commit()
 
-        return True
+        result = db.execute(
+            text("""
+                DELETE FROM User 
+                WHERE user_id = :user_id
+            """),
+            {'user_id': user_id}
+        )
+        
+        db.commit()
+  
+        return result.rowcount > 0
 
     except Exception as e:
         db.rollback()
