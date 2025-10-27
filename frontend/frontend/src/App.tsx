@@ -1,29 +1,68 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { Container, Typography, Button } from "@mui/material";
+import { Typography, Button, Box } from "@mui/material";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "./firebase";
+import AuthPage from "./AuthPage";
 
 const App: React.FC = () => {
-    const [message, setMessage] = useState<string>("");
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        axios.get("/api/")
-            .then(response => setMessage(response.data.message))
-            .catch(error => console.error("Error fetching data", error));
-    }, []);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
 
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error signing out", error);
+    }
+  };
+
+  if (loading) {
     return (
-        <Container>
-            <Typography variant="h3" gutterBottom>
-                FastAPI + React + Vite + MUI (TypeScript)
-            </Typography>
-            <Typography variant="body1">
-                {message || "Loading..."}
-            </Typography>
-            <Button variant="contained" color="primary" style={{ marginTop: '20px' }}>
-                Material UI Button
-            </Button>
-        </Container>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography variant="h4">Loading...</Typography>
+      </Box>
     );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#f5f5f5",
+      }}
+    >
+      <Typography variant="h1" sx={{ mb: 4, fontWeight: 600 }}>
+        HoosStudying
+      </Typography>
+      <Button variant="outlined" onClick={handleLogout} sx={{ mt: 4 }}>
+        Logout
+      </Button>
+    </Box>
+  );
 };
 
 export default App;
