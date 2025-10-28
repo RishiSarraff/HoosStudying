@@ -1,12 +1,10 @@
 from sqlalchemy.orm import Session
-from typing import Optional, List
-from app.models import User
+from typing import Optional, List, Dict, Any
 from sqlalchemy.sql import text
 
 ## CREATE A USER:
-def create_user(db: Session, first_name: str, last_name: str, email: str):
+def create_user(db: Session, first_name: str, last_name: str, email: str) -> Optional[Dict[str, Any]]:
     try:
-   
         result = db.execute(
             text("""
                 INSERT INTO User (first_name, last_name, email)
@@ -41,7 +39,7 @@ def create_user(db: Session, first_name: str, last_name: str, email: str):
 ## READ/QUERY USERS:
 
 # Get All User:
-def get_all_users(db: Session) -> List[User]:
+def get_all_users(db: Session) -> List[Dict[str, Any]]:
     result = db.execute(
         text("""
              SELECT *
@@ -53,7 +51,7 @@ def get_all_users(db: Session) -> List[User]:
 
 
 # Get User by ID:
-def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+def get_user_by_id(db: Session, user_id: int) -> Optional[Dict[str, Any]]:
     result = db.execute(
         text("""
              SELECT * 
@@ -66,7 +64,7 @@ def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     return user_by_id
 
 # Get User by Email:
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
+def get_user_by_email(db: Session, email: str) -> Optional[Dict[str, Any]]:
     result = db.execute(
         text("""
              SELECT *
@@ -79,7 +77,7 @@ def get_user_by_email(db: Session, email: str) -> Optional[User]:
     return user_by_email
 
 # Get User by First or Last Name:
-def get_user_by_name(db: Session, name: str) -> List[User]:
+def get_user_by_name(db: Session, name: str) -> Optional[Dict[str, Any]]:
     search_pattern = f"%{name}%"
     result = db.execute(
         text("""
@@ -93,17 +91,42 @@ def get_user_by_name(db: Session, name: str) -> List[User]:
     )
     return result.mappings().all()
 
+def get_users_name(db: Session, user_id: int) -> Optional[Dict[str, Any]]:
+    result = db.execute(
+        text("""
+            SELECT first_name, last_name
+            FROM User
+            WHERE user_id = :user_id
+        """),
+        {'user_id': user_id}
+    )
+    return result.mappings().first()
+
+def get_pipeline_count_by_user(db: Session, user_id: int) -> int:
+    result = db.execute(
+        text("""
+            SELECT COUNT(*) AS pipeline_count
+            FROM Pipeline 
+            WHERE user_id = :user_id
+        """),
+        {'user_id': user_id}
+    )
+
+    return result.mappings().first()['pipeline_count']
+
 ## UPDATE A USER:
 
 # Update a user by user_id:
-def update_user(db: Session, user_id: int, first_name: Optional[str], last_name: Optional[str], email: Optional[str]) -> Optional[User]:
+def update_user(db: Session, user_id: int, 
+                first_name: Optional[str] = None, 
+                last_name: Optional[str] = None, 
+                email: Optional[str] = None) -> Optional[Dict[str, Any]]:
     try:
         db_user = get_user_by_id(db, user_id)
 
         if not db_user:
             return None
         
-        # Build dynamic UPDATE query based on which fields are provided
         update_fields = []
         params = {'user_id': user_id}
         
@@ -117,7 +140,6 @@ def update_user(db: Session, user_id: int, first_name: Optional[str], last_name:
             update_fields.append("email = :email")
             params['email'] = email
             
-
         if not update_fields:
             return db_user
 
@@ -140,8 +162,6 @@ def update_user(db: Session, user_id: int, first_name: Optional[str], last_name:
         raise e
 
 ## DELETE A USER:
-
-
 def delete_user_by_id(db: Session, user_id: int) -> bool:
     try:
 
@@ -160,7 +180,7 @@ def delete_user_by_id(db: Session, user_id: int) -> bool:
         
         db.commit()
   
-        return result.rowcount > 0
+        return result.mappings().first() is not None
 
     except Exception as e:
         db.rollback()
@@ -170,4 +190,16 @@ def delete_user_by_id(db: Session, user_id: int) -> bool:
 
 # Get the total number of users:
 def get_user_count(db: Session) -> int:
-    return db.query(User).count()
+    try:
+        result = db.execute(
+            text("""
+                SELECT COUNT(*) AS user_count 
+                FROM User
+            """)
+        )
+        count = result.mappings().first()['user_count']
+        return count
+
+    except Exception as e:
+        db.rollback()
+        raise e
