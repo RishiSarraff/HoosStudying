@@ -1,3 +1,6 @@
+
+#### FOR DOCUMENTATION PURPOSES ONLY ####
+
 from app.database import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
@@ -6,12 +9,12 @@ from sqlalchemy import Enum as SQLEnum
 from enum import Enum as PyEnum
 
 class SenderType(str, PyEnum):
-    user = 'user'
-    bot = 'bot'
+    USER = 'user'
+    BOT = 'bot'
 
 class TagType(str, PyEnum):
-    system = 'system'
-    custom = 'custom'
+    SYSTEM = 'system'
+    CUSTOM = 'custom'
 
 class User(Base):
     __tablename__ = "User"
