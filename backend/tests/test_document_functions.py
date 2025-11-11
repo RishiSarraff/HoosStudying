@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import localSession
-from app.crudFunctions import userFunctions, pipelineFunctions, documentFunctions
+from app.crudFunctions import userFunctions, documentFunctions
 import random
 
 def get_db():
@@ -110,7 +110,7 @@ class TestDocumentFunctionsComplete:
                 self.test_metadata_ids.append(document_metadata['metadata_id'])
                 print(f"    Created metadata for document {document_id}")
 
-                chunks_data = [
+                chunks = [
                 {
                     "chunk_text": f"This is chunk {i} of {file_name}. " + 
                                   f"Content here for testing purposes. " * 5,
@@ -122,7 +122,7 @@ class TestDocumentFunctionsComplete:
                 created_chunks = documentFunctions.create_document_chunks_batch(
                     self.db,
                     document_id,
-                    chunks=chunks_data
+                    chunks
                 )
 
                 for chunk in created_chunks:
@@ -186,7 +186,7 @@ class TestDocumentFunctionsComplete:
         metadata_id = self.test_metadata_ids[0]
         document_id = self.test_document_ids[0]
 
-        fetched_metadata = documentFunctions.get_document_metadata_by_document_ids(self.db, document_id)
+        fetched_metadata = documentFunctions.get_document_metadata_by_document_id(self.db, document_id)
         assert fetched_metadata is not None, f"Failed to Retrieve Metadata for document {document_id}"
         assert fetched_metadata['document_id'] == document_id, "Document Id does not match"
         assert fetched_metadata['metadata_id'] == metadata_id, "Metadata Id does not match"
@@ -209,7 +209,7 @@ class TestDocumentFunctionsComplete:
 
         print(f"Retrieved valid metadata for document {document_id}")
 
-        invalid_metadata = documentFunctions.get_document_metadata_by_document_ids(self.db, 999999)
+        invalid_metadata = documentFunctions.get_document_metadata_by_document_id(self.db, 999999)
         assert invalid_metadata is None, "Should return None for invalid document ID"
         print("Correctly returns None for invalid document ID")
 
@@ -338,10 +338,101 @@ class TestDocumentFunctionsComplete:
         print("Correctly handles empty and invalid inputs")
 
     def test_delete_document_by_id(self):
-        pass
+
+        user_id = self.test_user_ids[0]
+
+        test_document = documentFunctions.create_document(
+            self.db,
+            user_id=user_id,
+            file_name="temp_delete_test.pdf",
+            file_type="pdf"
+        )
+        assert test_document is not None, "Document could not be created"
+        assert test_document['user_id'] == user_id, "The User Id is mismatched"
+
+        test_doc_id = test_document['document_id']
+        print(f"Created document {test_doc_id}")
+
+        doc_before = documentFunctions.get_document_by_document_id(
+            self.db,
+            test_doc_id
+        )
+        assert doc_before is not None, "Test document exists here before deletion"
+
+        deleted = documentFunctions.delete_document_by_id(
+            self.db,
+            test_doc_id
+        )
+        assert deleted is not None or deleted == True, "Delete should return success"    
+        print(f"Deleted document {test_doc_id}")
+
+        doc_after = documentFunctions.get_document_by_document_id(
+            self.db,
+            test_doc_id
+        )
+        assert doc_after is  None, "Test document should not exist after deletion"
+
+        invalid_document_to_delete = documentFunctions.delete_document_by_id(
+            self.db,
+            99999
+        )
+        assert invalid_document_to_delete is None or invalid_document_to_delete == False, \
+            "Deleting non-existent document should return None or False"
+        print("Asserts past the invalid document to delete")
 
     def test_delete_all_documents_for_user(self):
-        pass
+
+        test_user = userFunctions.create_user(
+            self.db,
+            first_name="soham",
+            last_name="sinha",
+            email="soham.sinha{random.randint(1000,9999)}@test.com"
+        )
+        assert test_user is not None, "User could not be created"
+
+        test_user_id = test_user['user_id']
+
+        test_doc_1 = documentFunctions.create_document(self.db, test_user_id, "file1.pdf", "pdf")
+        test_doc_2 = documentFunctions.create_document(self.db, test_user_id, "file2.doc", "doc")
+        test_doc_3 = documentFunctions.create_document(self.db, test_user_id, "file3.txt", "txt")
+
+        test_doc_ids = [test_doc_1['document_id'], test_doc_2['document_id'], test_doc_3['document_id']]
+        print(f"Created 3 documents for test user {test_user_id}")
+
+        deleted_count = documentFunctions.delete_all_documents_for_user(
+            self.db,
+            test_user_id
+        )
+        assert deleted_count == 3 or deleted_count is not None, \
+            f"Could not delete all the documents by user {test_user_id}"
+        
+        for each_test_doc_id in test_doc_ids:
+            result_of_retrieval = documentFunctions.get_document_by_document_id(
+                self.db,
+                each_test_doc_id
+            )
+
+            assert result_of_retrieval is None, f"Document {each_test_doc_id} was not properly deleted from the user {test_user_id}"
+        print(f"Every document from user {test_user_id} has been deleted")
+
+        empty_deletion = documentFunctions.delete_all_documents_for_user(
+            self.db,
+            test_user_id
+        )
+        assert empty_deletion == 0 or empty_deletion is None, \
+        "There are still documents left for this user that need to be deleted."
+
+        userFunctions.delete_user_by_id(self.db, test_user_id)
+        print(f"Deleted test user {test_user_id}")
+
+        invalid_deletion = documentFunctions.delete_all_documents_for_user(
+            self.db,
+            99999
+        )
+        assert invalid_deletion == 0 or invalid_deletion is None, \
+        "Invalid user id should have 0 or none documents under their user id"
+
+        print("Correctly handles the invalid deletion test case")
 
     def cleanup(self):
         print("Cleaning up test document data and user data...")
