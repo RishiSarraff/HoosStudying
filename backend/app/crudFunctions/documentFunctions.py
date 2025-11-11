@@ -140,8 +140,7 @@ def get_documents_by_user_id(db: Session, user_id: int) -> Optional[Dict[str, An
         {'user_id': user_id})
         
     return result.mappings().all()
-
-    
+ 
 def get_document_metadata_by_document_id(db: Session, document_id: int):
     result = db.execute(
         text(
@@ -180,7 +179,6 @@ def get_all_metadata_for_user(db: Session,  user_id: int) -> List[Dict[str, Any]
     )
 
     return result.mappings().all()
-
 
 def get_user_document_averages(db: Session, user_id: int) -> List[Dict[str, Any]]:
     result = db.execute(
