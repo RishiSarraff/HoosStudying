@@ -157,7 +157,6 @@ class TestUserFunctionsComplete:
         assert updated_user['last_name'] == "Williams", "Last name should remain unchanged"
         print("Successfully updated user")
 
-        # Update last name only
         updated = userFunctions.update_user(
             self.db,
             user_id,
@@ -169,7 +168,6 @@ class TestUserFunctionsComplete:
         assert updated['last_name'] == "Wilson", "Last name not updated"
         print("Successfully updated last name only")
         
-        # Update email
         new_email = f"alicia.wilson{random.randint(1000,9999)}@test.com"
         updated = userFunctions.update_user(
             self.db,
@@ -179,7 +177,6 @@ class TestUserFunctionsComplete:
         assert updated['email'] == new_email, "Email not updated"
         print("Successfully updated email")
         
-        # Update all fields at once
         updated = userFunctions.update_user(
             self.db,
             user_id,

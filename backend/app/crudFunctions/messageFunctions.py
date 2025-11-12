@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from sqlalchemy.sql import text
-from models import SenderType
+from ..models import SenderType
 
 ## CREATE MESSAGE:
 def create_message(db: Session, conversation_id: int, sender_type: SenderType, message_text: str) -> Optional[Dict[str, Any]]:
@@ -59,7 +59,7 @@ def get_all_messages_in_conversation(db: Session, conversation_id: int) -> Optio
 
     return result.mappings().all()
 
-def get_all_messages(db: Session, user_id: int) -> Optional[Dict[str, Any]]:
+def get_all_messages_from_user(db: Session, user_id: int) -> Optional[Dict[str, Any]]:
     result = db.execute(
         text(
             """

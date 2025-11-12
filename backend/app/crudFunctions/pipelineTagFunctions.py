@@ -36,7 +36,6 @@ def add_multiple_tags_to_pipeline(db, pipeline_id, tag_ids: List[int]) -> List[D
     try:
         for tag_id in tag_ids:
             if not does_tag_in_pipeline_exist(db, pipeline_id, tag_id):
-                
                 result = db.execute(
                     text(
                         """

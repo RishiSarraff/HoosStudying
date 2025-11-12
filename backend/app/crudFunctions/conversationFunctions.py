@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from sqlalchemy.sql import text
-from pipelineFunctions import get_general_pipeline_id
+from .pipelineFunctions import get_general_pipeline_id
 
 
 ## CREATE CONVERSATION
@@ -40,8 +40,6 @@ def create_conversation(db: Session, user_id: int, pipeline_id=None) -> Optional
 
 def create_general_conversation(db: Session, user_id: int) -> Optional[Dict[str, Any]]:
     return create_conversation(db, user_id, pipeline_id=None)
-
-    
 
 ## READ/QUERY CONVERSATIONS
 def get_conversation_by_id(db: Session, conversation_id: int) -> Optional[Dict[str, Any]]:
@@ -179,7 +177,7 @@ def update_conversation_timestamp(db: Session, conversation_id: int):
 
         db.commit()
 
-        return result.mappings().first() is not None
+        return result.rowcount > 0
     except Exception as e:
         db.rollback()
         raise e
