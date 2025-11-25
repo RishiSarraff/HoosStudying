@@ -12,9 +12,14 @@ from firebase_admin import credentials, storage
 from app.crudFunctions import documentFunctions, pipelineDocumentFunctions
 import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 firebase_credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
-firebase_storage_bucket = os.getenv('FIREBASE_STORAGE_BUCKET')
+if not firebase_credentials_path:
+    raise ValueError("FIREBASE_CREDENTIALS_PATH environment variable is not set")
+firebase_storage_bucket = os.getenv('FIREBASE_STORAGE_BUCKET', 'hoosstudying-ab036.firebasestorage.app')
 
 class DocumentProcessor:
 
@@ -26,7 +31,7 @@ class DocumentProcessor:
                 'storageBucket': firebase_storage_bucket
             })
 
-        self.bucket = storage.bucket()
+        self.bucket = storage.bucket(firebase_storage_bucket)
     
     ## EXTRACT TEXT FROM PDF FILE
     def extract_text_from_pdf(self, file_path: str) -> Tuple[str, Dict[str, Any]]:
@@ -203,11 +208,37 @@ class DocumentProcessor:
         _, fileType = os.path.splitext(file_path)
         return fileType[1:].lower()
 
-    ## UPLOAD TO FIREBASE STORAGE
+    ## UPLOAD TO FIREBASE STORAGE (with MySQL IDs)
     def upload_to_firebase(self, file_path: str, user_id: int, document_id: int, file_name: str) -> Tuple[str, str]:
         try:
 
             storage_path = f"users/{user_id}/documents/{document_id}/{file_name}"
+
+            blob = self.bucket.blob(storage_path)
+            blob.upload_from_filename(file_path)
+
+            download_url = blob.generate_signed_url(
+                version="v4",
+                expiration=timedelta(hours=1),
+                method="GET"
+            )
+
+            return storage_path, download_url
+
+        except Exception as e:
+            raise Exception(f"Error uploading to Firebase: {str(e)}")
+    
+    ## SIMPLE UPLOAD TO FIREBASE STORAGE (Firebase-only, no MySQL)
+    def upload_to_firebase_simple(self, file_path: str, firebase_uid: str, file_name: str) -> Tuple[str, str]:
+        """
+        Upload file to Firebase Storage without requiring MySQL user_id or document_id.
+        Uses Firebase UID directly for the storage path.
+        """
+        try:
+            import uuid
+            # Generate a unique document identifier using UUID
+            document_uuid = str(uuid.uuid4())
+            storage_path = f"users/{firebase_uid}/documents/{document_uuid}/{file_name}"
 
             blob = self.bucket.blob(storage_path)
             blob.upload_from_filename(file_path)

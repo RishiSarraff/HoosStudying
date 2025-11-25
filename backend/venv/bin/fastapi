@@ -1,6 +1,4 @@
-#!/bin/sh
-'''exec' "/Users/sarra/Documents/UVA/Fourth Year/Fall 2025/Databases/HoosStudying/backend/venv/bin/python3" "$0" "$@"
-' '''
+#!/Users/shivpatel/HoosStudying/backend/venv/bin/python3
 import sys
 from fastapi.cli import main
 if __name__ == '__main__':
