@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from sqlalchemy.sql import text
-from models import TagType
+from ..models import TagType
 
 ## CREATE TAG:
 def create_system_tag(db: Session, name: str, color: str) ->  Optional[Dict[str, Any]]:

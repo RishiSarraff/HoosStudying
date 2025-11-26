@@ -1,3 +1,4 @@
+from sqlalchemy.sql import text
 
 UPDATE_CONVERSATION_AFTER_MESSAGE = """
     CREATE TRIGGER Update_Conversation_After_Message

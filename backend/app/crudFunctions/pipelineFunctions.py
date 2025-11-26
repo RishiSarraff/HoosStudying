@@ -7,7 +7,7 @@ def create_pipeline(db: Session, user_id: int, pipeline_name: str, description: 
     try:
         result = db.execute(
             text(""" 
-                INSERT INTO PIPELINE (user_id, pipeline_name, description)
+                INSERT INTO Pipeline (user_id, pipeline_name, description)
                 VALUES (:user_id, :pipeline_name, :description)
             """),
             {

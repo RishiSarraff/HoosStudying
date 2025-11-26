@@ -1,5 +1,4 @@
 # scripts/create_stored_procedures.py (Alternative)
-from sqlalchemy import text
 from app.database import engine
 
 GET_PIPELINE_STATS = """
@@ -111,15 +110,15 @@ def create_all_stored_procedures():
                 
                 # Drop if exists
                 cursor.execute(f"DROP PROCEDURE IF EXISTS {proc_name}")
-                print(f"  ✓ Dropped existing (if any)")
+                print(f"Dropped existing (if any)")
                 
                 # Create procedure
                 cursor.execute(proc_sql)
                 connection.commit()
-                print(f"  ✓ Created successfully")
+                print(f"Created successfully")
                 
             except Exception as e:
-                print(f"  ✗ Error: {e}")
+                print(f"Error: {e}")
                 connection.rollback()
                 continue
         

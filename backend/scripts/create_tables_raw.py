@@ -9,9 +9,9 @@ def create_all_tables():
                 print(f"Executing table creation {i}/{len(ALL_TABLES)}...")
                 connection.execute(text(create_statement))
                 connection.commit()
-                print(f"✓ Table {i} created successfully")
+                print(f"Table {i} created successfully")
             except Exception as e:
-                print(f"✗ Error creating table {i}: {e}")
+                print(f"Error creating table {i}: {e}")
                 connection.rollback()
 if __name__ == "__main__":
     create_all_tables()

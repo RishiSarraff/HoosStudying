@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from sqlalchemy.sql import text
 
 
@@ -80,13 +80,13 @@ def create_document_metadata(db: Session,
         db.rollback()
         raise e
 
-def create_document_chunks_batch(db: Session, document_id: int, chunks: List[str]) -> Optional[Dict[str, Any]]:
+def create_document_chunks_batch(db: Session, document_id: int, chunks: list[dict]) -> Optional[Dict[str, Any]]:
     try:
 
         created_chunks = []
 
         ## we take the chunk text and make index based on the size of the arr
-        for chunk_index, chunk_text in enumerate(chunks):
+        for chunk_data in chunks:
             currentResult = db.execute(
                 text(
                     """
@@ -96,8 +96,8 @@ def create_document_chunks_batch(db: Session, document_id: int, chunks: List[str
                 )
                 ,{
                     'document_id': document_id,
-                    'chunk_text': chunk_text,
-                    'chunk_index': chunk_index
+                    'chunk_text': chunk_data['chunk_text'],
+                    'chunk_index': chunk_data['chunk_index']
                 })
 
             currentChunkId = currentResult.lastrowid
@@ -140,8 +140,7 @@ def get_documents_by_user_id(db: Session, user_id: int) -> Optional[Dict[str, An
         {'user_id': user_id})
         
     return result.mappings().all()
-
-    
+ 
 def get_document_metadata_by_document_id(db: Session, document_id: int):
     result = db.execute(
         text(
@@ -181,7 +180,6 @@ def get_all_metadata_for_user(db: Session,  user_id: int) -> List[Dict[str, Any]
 
     return result.mappings().all()
 
-
 def get_user_document_averages(db: Session, user_id: int) -> List[Dict[str, Any]]:
     result = db.execute(
         text(
@@ -211,7 +209,7 @@ def get_all_chunks_by_user(db: Session, user_id: int) -> List[str]:
     result = db.execute(
         text(
             """
-                SELECT dc.chunk_text
+                SELECT *
                 FROM Document_Chunk dc 
                 JOIN Document d ON dc.document_id = d.document_id
                 WHERE d.user_id = :user_id;
@@ -288,7 +286,7 @@ def get_chunks_from_list(db: Session, listOfChunkIds: List[int]) -> List[Dict[st
 
 ### DELETE DOCUMENTS:
 
-def delete_document_by_id(db: Session, document_id: int):
+def delete_document_by_id(db: Session, document_id: int) -> bool:
     try:
         result = db.execute(
             text(
@@ -303,13 +301,13 @@ def delete_document_by_id(db: Session, document_id: int):
 
         db.commit()
 
-        return result.mappings().first() is not None
+        return result.rowcount > 0
     
     except Exception as e:
         db.rollback()
         raise e
     
-def delete_all_documents_for_user(db: Session, user_id: int):
+def delete_all_documents_for_user(db: Session, user_id: int) -> int:
     try:
         result = db.execute(
             text(
