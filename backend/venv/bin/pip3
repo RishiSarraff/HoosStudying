@@ -1,4 +1,6 @@
-#!/Users/shivpatel/HoosStudying/backend/venv/bin/python3
+#!/bin/sh
+'''exec' "/Users/sarra/Documents/UVA/Fourth Year/Fall 2025/Databases/HoosStudying/backend/venv/bin/python3.12" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys
