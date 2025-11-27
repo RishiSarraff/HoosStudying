@@ -1,23 +1,52 @@
 import React, { useEffect, useState } from "react";
 import { Typography, Box} from "@mui/material";
 import AuthPage from "./components/AuthPage";
-import UploadForm from "./components/UploadForm";
 import { setupAuthListener, getCurrentToken } from "./services/auth";
-import type { MySQLUser } from "./types"; 
+import type { MySQLPipeline, MySQLUser } from "./types"; 
 import axios from "axios"
 import NameModal from "./components/NameModal";
+import MainScreen from "./components/MainScreen";
+import { getDefaultUserPipeline, getAllNonDefaultPipelines } from "./services/pipeline";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<MySQLUser | null>(null);
+  const [pipeline, setPipeline] = useState<MySQLPipeline | null>(null);
   const [needsName, setNeedsName] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [listOfPipelines, setListOfPipelines] = useState<MySQLPipeline[]>([]);
+
+  const fetchDefaultPipeline = async(token:string) => {
+    try{
+      const defaultPipeline = await getDefaultUserPipeline(token);
+      setPipeline(defaultPipeline);
+    }
+    catch (err){
+      console.error("Failed to fetch default pipeline", err)
+    }
+  }
+  const fetchNonDefaultPipelines = async(token:string) => {
+    try{
+      const nonDefaultPipelines = await getAllNonDefaultPipelines(token);
+      setListOfPipelines(nonDefaultPipelines);
+    }
+    catch (err){
+      console.error("Failed to fetch all non default pipelines", err)
+    }
+  }
 
   useEffect(() => {
     const unsubscribe = setupAuthListener(
-      (mysqlUser) => {
+      async (mysqlUser) => {
         setUser(mysqlUser);
         if(mysqlUser.needs_name){
           setNeedsName(true)
+        }
+        else{
+          const token = await getCurrentToken();
+          if (token){
+            await fetchDefaultPipeline(token);
+            await fetchNonDefaultPipelines(token);
+          }
         }
         setLoading(false);
       },
@@ -70,9 +99,15 @@ const App: React.FC = () => {
           }}
         />
       )}
-      <div>
+      {/* <div>
         <UploadForm user={user}/> 
-      </div>
+      </div> */}
+      {(user && pipeline) ? 
+        <div>
+          <MainScreen user={user} pipeline={pipeline} listOfPipelines={listOfPipelines}/>
+        </div>
+        : <div></div>
+      }
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Modal, Box, TextField, Button, Typography } from "@mui/material";
 import type { NameModalProps } from "../types/index" 
 

@@ -23,6 +23,7 @@ class UserResponse(BaseModel):
     last_name: str
     email: str
     created_user: bool #did we create user or does it exist already.
+    needs_name: bool
 
 @router.post("/verify", response_model=UserResponse)
 async def verify_and_sync_user(
@@ -52,13 +53,17 @@ async def verify_and_sync_user(
         user = create_user['user']
         user_was_created = create_user['created_user']
 
+        needs_name = user['first_name'].strip() == "" 
+
+
         return UserResponse(
             user_id = user['user_id'],
             firebase_uid = user['firebase_uid'],
             first_name = user['first_name'],
             last_name = user['last_name'],
-            email = user['email'],
-            created_user = user_was_created
+            email = user['email'],  
+            created_user = user_was_created,
+            needs_name = needs_name
         )
 
     except ValueError as e:

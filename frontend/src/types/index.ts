@@ -32,3 +32,20 @@ export interface UserUpdateNameRequest {
     last_name?: string;
 }
 
+export interface ChatContainerComponents {
+    user: MySQLUser;
+}
+
+export interface MainScreenInputs {
+    user: MySQLUser;
+    pipeline: MySQLPipeline;
+    listOfPipelines: MySQLPipeline[];
+}
+
+export interface MySQLPipeline {
+    user_id: number,
+    pipeline_id: number,
+    pipeline_name: string,
+    description: string,
+    created_at: Date
+}

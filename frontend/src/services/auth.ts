@@ -32,6 +32,7 @@ export async function getCurrentUser(token: string): Promise<MySQLUser>{
     return response.data;
 }
 
+
 export function setupAuthListener(
     onUserSynced: (user: MySQLUser) => void,
     onUserSignedOut: () => void
@@ -43,14 +44,8 @@ export function setupAuthListener(
 
                 const needsName = !mysqlUser.first_name; 
                 mysqlUser.needs_name = needsName;       
-                
+
                 onUserSynced(mysqlUser);
-                
-                if (mysqlUser.created_user) {
-                    console.log('New user created in MySQL:', mysqlUser);
-                } else {
-                    console.log('Existing user signed in:', mysqlUser);
-                }
             } catch (error) {
                 console.error('Error syncing user to MySQL:', error);
             }

@@ -74,6 +74,19 @@ def get_pipelines_by_user_id(db: Session, user_id: int) -> List[Dict[str, Any]]:
 
     return pipeline_by_user_id
 
+def get_non_general_pipelines_by_user_id(db: Session, user_id: int) -> List[Dict[str, Any]]:
+    result = db.execute(
+        text("""
+            SELECT * 
+            FROM Pipeline 
+            WHERE user_id = :user_id AND pipeline_name != "general"
+        """),
+        {'user_id': user_id})
+
+    non_general_pipelines_by_user_id = result.mappings().all()
+
+    return non_general_pipelines_by_user_id
+
 def get_pipeline_name_description(db: Session, user_id: int) -> List[Dict[str, Any]]:
     result = db.execute(
         text("""
