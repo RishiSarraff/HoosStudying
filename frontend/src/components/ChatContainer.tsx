@@ -13,20 +13,18 @@ const ChatContainer: React.FC<ChatContainerComponents> = ({user}) => {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#f5f5f5",
+                backgroundColor: "#CACACA", // Medium-light gray from design
                 padding: 4,
             }}
             >
-            <Typography variant="h2" sx={{ mb: 4, fontWeight: 600 }}>
+            <Typography variant="h2" sx={{ mb: 4, fontWeight: 700, color: '#212121' }}>
                 Welcome, {user.first_name}!
             </Typography>
             <ConversationContainer/>
 
-            <Box sx={{ width: "100%" }}>
+            <Box sx={{ width: "100%", maxWidth: 900 }}>
                 <ChatBox />
             </Box>
-            
-            
         </Box>
     )
 }

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from sqlalchemy.sql import text
+from .pipelineDocumentFunctions import get_count_of_documents_by_pipeline
 
 ## CREATE A PIPELINE:
 def create_pipeline(db: Session, user_id: int, pipeline_name: str, description: str) -> Optional[Dict[str, Any]]:
@@ -83,9 +84,24 @@ def get_non_general_pipelines_by_user_id(db: Session, user_id: int) -> List[Dict
         """),
         {'user_id': user_id})
 
-    non_general_pipelines_by_user_id = result.mappings().all()
+    rows = result.mappings().all()
 
-    return non_general_pipelines_by_user_id
+    pipelines = []
+
+    for each_row in rows:
+        pipeline_dict = dict(each_row)
+
+        number_of_documents = get_count_of_documents_by_pipeline(
+            db, 
+            pipeline_id=pipeline_dict["pipeline_id"]
+        )
+
+        pipeline_dict["number_of_documents"] = number_of_documents
+
+        pipelines.append(pipeline_dict)
+
+
+    return pipelines
 
 def get_pipeline_name_description(db: Session, user_id: int) -> List[Dict[str, Any]]:
     result = db.execute(

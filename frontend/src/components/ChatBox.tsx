@@ -1,89 +1,90 @@
-import * as React from 'react';
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
-import FormControl from '@mui/joy/FormControl';
-import Textarea from '@mui/joy/Textarea';
-import IconButton from '@mui/joy/IconButton';
-import Menu from '@mui/joy/Menu';
-import MenuItem from '@mui/joy/MenuItem';
-import ListItemDecorator from '@mui/joy/ListItemDecorator';
-import FormatBold from '@mui/icons-material/FormatBold';
-import FormatItalic from '@mui/icons-material/FormatItalic';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import Check from '@mui/icons-material/Check';
+import React from 'react';
+import { Box, TextField, Button } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
 
 export default function ChatBox() {
-  const [italic, setItalic] = React.useState(false);
-  const [fontWeight, setFontWeight] = React.useState('normal');
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [message, setMessage] = React.useState('');
+
+  const handleSend = () => {
+    if (message.trim()) {
+      console.log('Sending message:', message);
+      setMessage('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <FormControl>
-      <Textarea
-        placeholder="Type something here…"
-        minRows={3}
-        endDecorator={
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 'var(--Textarea-paddingBlock)',
-              pt: 'var(--Textarea-paddingBlock)',
-              borderTop: '1px solid',
-              borderColor: 'divider',
-              flex: 'auto',
-            }}
-          >
-            <IconButton
-              variant="plain"
-              color="neutral"
-              onClick={(event) => setAnchorEl(event.currentTarget)}
-            >
-              <FormatBold />
-              <KeyboardArrowDown fontSize="medium" />
-            </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={() => setAnchorEl(null)}
-              size="sm"
-              placement="bottom-start"
-              sx={{ '--ListItemDecorator-size': '24px' }}
-            >
-              {['200', 'normal', 'bold'].map((weight) => (
-                <MenuItem
-                  key={weight}
-                  selected={fontWeight === weight}
-                  onClick={() => {
-                    setFontWeight(weight);
-                    setAnchorEl(null);
-                  }}
-                  sx={{ fontWeight: weight }}
-                >
-                  <ListItemDecorator>
-                    {fontWeight === weight && <Check fontSize="small" />}
-                  </ListItemDecorator>
-                  {weight === '200' ? 'lighter' : weight}
-                </MenuItem>
-              ))}
-            </Menu>
-            <IconButton
-              variant={italic ? 'soft' : 'plain'}
-              color={italic ? 'primary' : 'neutral'}
-              aria-pressed={italic}
-              onClick={() => setItalic((bool) => !bool)}
-            >
-              <FormatItalic />
-            </IconButton>
-            <Button sx={{ ml: 'auto' }}>Send</Button>
-          </Box>
-        }
-        sx={[
-          {
-            minWidth: 300,
-            fontWeight,
+    <Box 
+      sx={{ 
+        width: '100%', 
+        maxWidth: 900,
+        backgroundColor: '#9FA8B8',
+        borderRadius: 3,
+        p: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+      }}
+    >
+      <TextField
+        fullWidth
+        multiline
+        rows={3}
+        placeholder="Enter Text"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyPress={handleKeyPress}
+        variant="standard"
+        sx={{
+          '& .MuiInputBase-root': {
+            color: '#FFFFFF',
+            fontSize: '1rem',
           },
-          italic ? { fontStyle: 'italic' } : { fontStyle: 'initial' },
-        ]}
+          '& .MuiInput-underline:before': {
+            borderBottom: 'none',
+          },
+          '& .MuiInput-underline:after': {
+            borderBottom: 'none',
+          },
+          '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
+            borderBottom: 'none',
+          },
+          '& .MuiInputBase-input::placeholder': {
+            color: '#E0E0E0',
+            opacity: 1,
+          },
+        }}
       />
-    </FormControl>
+      
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          variant="contained"
+          onClick={handleSend}
+          endIcon={<SendIcon />}
+          disabled={!message.trim()}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            backgroundColor: '#FFFFFF',
+            color: '#9FA8B8',
+            '&:hover': {
+              backgroundColor: '#F5F5F5',
+            },
+            '&.Mui-disabled': {
+              backgroundColor: '#E0E0E0',
+              color: '#BDBDBD',
+            },
+          }}
+        >
+          Send
+        </Button>
+      </Box>
+    </Box>
   );
 }

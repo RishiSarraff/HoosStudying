@@ -48,4 +48,28 @@ export interface MySQLPipeline {
     pipeline_name: string,
     description: string,
     created_at: Date
+    number_of_documents?: number
+}
+
+export interface NewPipelineModalProps{
+    user_id: number
+    open: boolean
+    onClose: () => void; 
+    onSubmit: (data: { pipelineName: string; pipelineDescription: string; user_id: number }) => void;
+}
+
+export interface PipelineCardProps{
+    pipeline_id: number
+    pipeline_name: string
+    pipeline_description: string
+    number_of_documents?: number
+    index: number
+    onDelete: () => void;
+}
+
+export interface AlertProps {
+    message: string;
+    open: boolean;
+    onClose: () => void;
+    severity?: 'success' | 'error' | 'warning' | 'info';
 }

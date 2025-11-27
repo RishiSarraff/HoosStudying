@@ -22,7 +22,15 @@ import PersonIcon from '@mui/icons-material/Person';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import AddIcon from '@mui/icons-material/Add';
 import ChatContainer from "./ChatContainer"
-import type { MainScreenInputs } from "../types/index";
+import { type MySQLPipeline, type MainScreenInputs } from "../types/index";
+import NewPipelineModal from './NewPipelineModal';
+import { createNewPipeline, deletePipeline } from "../services/pipeline"
+import { getCurrentToken } from '../services/auth';
+import PipelineCard from './PipelineCard';
+import SettingsIcon from '@mui/icons-material/Settings';
+import FolderIcon from '@mui/icons-material/Folder';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import CustomAlert from './CustomAlert';
 
 const drawerWidth = 360;
 
@@ -107,10 +115,23 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
   }),
 );
 
-const MainScreen: React.FC<MainScreenInputs> = ({user, pipeline, listOfPipelines}) => {
+const MainScreen: React.FC<MainScreenInputs> = ({user, pipeline, listOfPipelines: initialPipelines}) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [isGeneralChat, setIsGeneralChat] = useState<boolean>(pipeline.pipeline_name === "general");
+  const [openNewPipelineModal, setOpenNewPipelineModal] = useState<boolean>(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState<boolean>(false);
+  const [pipelineToDelete, setPipelineToDelete] = useState<MySQLPipeline>();
+  const [listOfPipelines, setListOfPipelines] = useState<MySQLPipeline[]>(initialPipelines);
+  const [alertState, setAlertState] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error'
+  });
+
+  const showAlert = (message: string, severity: 'success' | 'error' = 'success') => {
+    setAlertState({ open: true, message, severity });
+  };
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -120,11 +141,73 @@ const MainScreen: React.FC<MainScreenInputs> = ({user, pipeline, listOfPipelines
     setOpen(false);
   };
 
+  const handleNewPipelineSubmit = async(data: { pipelineName: string; pipelineDescription: string; user_id: number}) => {
+    try{
+        if(data.pipelineDescription && data.pipelineName){
+            // if we have both the description and the name then we create a new pipeline and refresh the page
+            const token = await getCurrentToken()
+            if(token){
+                const response = await createNewPipeline(token, data.pipelineName, data.pipelineDescription)
+                if(response){
+                    setListOfPipelines(prev => [...prev, response]);
+                    showAlert("Successfully Created new Pipeline", 'success');
+                }
+                else{
+                    showAlert("Failed to Create Pipeline", 'error');
+                }
+            }
+        }
+    }
+    catch(e){
+        console.log(e)
+        showAlert("Error Creating Pipeline", 'error');
+    }
+  }
+
+  const deletePipelineHandler = async(data: {pipeline_id: number}) => {
+    try{
+        if(pipelineToDelete){
+            const token = await getCurrentToken()
+            if(token){
+                const resultOfDeletion = await deletePipeline(token, data.pipeline_id)
+                if(resultOfDeletion){
+                    setListOfPipelines(prev => 
+                        prev.filter(p => p.pipeline_id !== data.pipeline_id)
+                    );
+                    showAlert("Successfully Deleted Pipeline", 'success');
+                }
+                else{
+                    showAlert("Failed to Delete Pipeline", 'error');
+                }
+            }
+        }
+
+        setPipelineToDelete(undefined)
+        setOpenDeleteModal(false)
+    }
+    catch(e){
+        console.log(e)
+        showAlert("Error Deleting Pipeline", 'error');
+    }
+  }
+
+  const goToSettingsHandler = async() => {
+
+  }
+
   return (
     <div>
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex'}}>
       <CssBaseline />
-      <AppBar position="fixed" open={open}>
+      <AppBar 
+        position="fixed" 
+        open={open}
+        sx={{
+            backgroundColor: '#FFFFFF', 
+            color: '#212121',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        }}
+        >
         <Toolbar>
           <IconButton
             color="inherit"
@@ -145,7 +228,16 @@ const MainScreen: React.FC<MainScreenInputs> = ({user, pipeline, listOfPipelines
           </Typography>
         </Toolbar>
       </AppBar>
-      <Drawer variant="permanent" open={open}>
+      <Drawer 
+        variant="permanent" 
+        open={open}
+        sx={{
+            '& .MuiDrawer-paper': {
+            backgroundColor: '#F5F5F5',
+            borderRight: '1px solid #E0E0E0',
+            }
+        }}
+        >
       <DrawerHeader
         sx={{
             display: 'flex',
@@ -176,7 +268,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({user, pipeline, listOfPipelines
 
         <Divider />
         <List>
-            <ListItem disablePadding sx={{ display: 'block' }}>
+            <ListItem disablePadding sx={{ display: 'block'}}>
                 <ListItemButton
                 sx={{
                     minHeight: 48,
@@ -198,6 +290,11 @@ const MainScreen: React.FC<MainScreenInputs> = ({user, pipeline, listOfPipelines
                         },
                     }}
                 />
+                {open && (
+                  <IconButton onClick={() => goToSettingsHandler()}>
+                      <SettingsIcon/>
+                  </IconButton>
+                )}
                 </ListItemButton>
             </ListItem>
 
@@ -221,34 +318,86 @@ const MainScreen: React.FC<MainScreenInputs> = ({user, pipeline, listOfPipelines
             )}
             </List>
         <Divider />
-        <Typography
-            variant="subtitle2"
-            sx={{ px: 2, pt: 2, pb: 1, opacity: open ? 1 : 0, fontWeight: 600, display: "flex",alignItems: 'center', justifyContent: "space-between" }}
-            >
-            Pipelines
-            <IconButton aria-label="Create a new pipeline">
-                <AddIcon />
-            </IconButton>
-        </Typography>
+        {open && (
+          <Typography
+              variant="subtitle2"
+              sx={{ 
+                px: 2, 
+                pt: 2, 
+                pb: 1, 
+                fontWeight: 600, 
+                display: "flex",
+                alignItems: 'center', 
+                justifyContent: "space-between", 
+                fontSize: '1.2rem'
+              }}
+              >
+              Pipelines
+              <IconButton aria-label="Create a new pipeline" onClick={() => setOpenNewPipelineModal(true)}>
+                  <AddIcon />
+              </IconButton>
+          </Typography>
+        )}
         <List>
-        {listOfPipelines.map((p) => (
-            <ListItem key={p.pipeline_id} disablePadding sx={{ display: 'block' }}>
-            <ListItemButton
-                sx={{
-                    minHeight: 48,
-                    px: 2.5,
-                    justifyContent: open ? 'initial' : 'center',
-                }}
-                onClick={() => {
-                    // Here is where we handle switching to this pipeline
-                }}
-            >
-                <ListItemIcon sx={{ minWidth: 0, justifyContent: 'center', mr: open ? 3 : 'auto' }}>
-                <   ChatBubbleIcon />
+        {listOfPipelines.map((p, index) => (
+                <ListItem key={p.pipeline_id} disablePadding sx={{ display: 'block' }}>
+                {open ?
+                (<ListItemButton
+                    sx={{
+                        minHeight: 48,
+                        px: 2.5,
+                        justifyContent: open ? 'initial' : 'center',
+                    }}
+                    onClick={() => {
+                        // Here is where we handle switching to this pipeline
+                    }}
+                >
+                    <PipelineCard 
+                        pipeline_id={p.pipeline_id} 
+                        pipeline_name={p.pipeline_name} 
+                        pipeline_description={p.description}
+                        number_of_documents={p.number_of_documents}
+                        index={index}
+                        onDelete={() => 
+                            {
+                                setOpenDeleteModal(true)
+                                setPipelineToDelete(p)
+                            }
+                        }/>
+                </ListItemButton>)
+                : (<ListItemButton
+                    sx={{
+                        minHeight: 48,
+                        justifyContent: 'center',
+                    }}
+                    onClick={() => {
+                        // Here is where we handle switching to this pipeline
+                    }}
+                > <ListItemIcon sx={{ minWidth: 0, justifyContent: 'center' }}>
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <FolderIcon sx={{ fontSize: 28, color: '#424242' }} />
+                      <Typography
+                        sx={{
+                          position: 'absolute',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          color: '#FFFFFF',
+                        }}
+                      >
+                        {index + 1}
+                      </Typography>
+                    </Box>
                 </ListItemIcon>
-                <ListItemText primary={p.pipeline_name} sx={{ opacity: open ? 1 : 0 }} />
-            </ListItemButton>
-            </ListItem>
+                </ListItemButton>)
+                }
+                </ListItem>
         ))}
         </List>
 
@@ -259,6 +408,62 @@ const MainScreen: React.FC<MainScreenInputs> = ({user, pipeline, listOfPipelines
         <ChatContainer user={user}/>
       </Box>
     </Box>
+
+    <CustomAlert 
+      message={alertState.message}
+      open={alertState.open}
+      severity={alertState.severity}
+      onClose={() => setAlertState(prev => ({ ...prev, open: false }))}
+    />
+
+    {openNewPipelineModal ? 
+        <NewPipelineModal 
+            user_id={user.user_id}
+            open={openNewPipelineModal}
+            onClose={() => setOpenNewPipelineModal(false)} 
+            onSubmit={
+                (data) => {
+                handleNewPipelineSubmit(data)
+                setOpenNewPipelineModal(false);
+            }}
+        /> : 
+        null}
+
+        {openDeleteModal && pipelineToDelete ? 
+            (<Dialog 
+                open={openDeleteModal}  // Changed from open={open}
+                onClose={() => setOpenDeleteModal(false)} 
+                fullWidth 
+                maxWidth="sm"
+            >
+                <DialogTitle>Delete Pipeline "{pipelineToDelete.pipeline_name}"</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                        Are you sure you want to delete this pipeline? This action cannot be undone.
+                    </Typography>
+                    <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                        Description: {pipelineToDelete.description}
+                    </Typography>
+                    <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                        Files: {pipelineToDelete.number_of_documents}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenDeleteModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => deletePipelineHandler({pipeline_id: pipelineToDelete.pipeline_id})}
+                    >
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>)
+            : 
+            null
+        }
     </div>
   );
 }

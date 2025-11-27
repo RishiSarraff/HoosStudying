@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Typography, Box} from "@mui/material";
+import { Typography, Box, ThemeProvider} from "@mui/material";
 import AuthPage from "./components/AuthPage";
 import { setupAuthListener, getCurrentToken } from "./services/auth";
 import type { MySQLPipeline, MySQLUser } from "./types"; 
@@ -7,6 +7,7 @@ import axios from "axios"
 import NameModal from "./components/NameModal";
 import MainScreen from "./components/MainScreen";
 import { getDefaultUserPipeline, getAllNonDefaultPipelines } from "./services/pipeline";
+import theme from "./theme";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<MySQLUser | null>(null);
@@ -79,6 +80,7 @@ const App: React.FC = () => {
   }
 
   return (
+    <ThemeProvider theme={theme}>
     <div>
       {needsName && (
         <NameModal
@@ -109,6 +111,7 @@ const App: React.FC = () => {
         : <div></div>
       }
     </div>
+    </ThemeProvider>
   );
 };
 
