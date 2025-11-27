@@ -17,10 +17,10 @@ try:
     test_result = embedding_model.get_embeddings(["test"])[0]
     print("✓ Test embedding generated successfully")
     print(f"✓ Embedding dimension: {len(test_result.values)}")
-    print("\n✅ Vertex AI is properly configured and working!")
+    print("\n Vertex AI is properly configured and working!")
     
 except Exception as e:
-    print(f"\n❌ Error: {str(e)}")
+    print(f"\n Error: {str(e)}")
     print("\nTo fix this:")
     print("1. Enable Vertex AI API at: https://console.cloud.google.com/apis/library/aiplatform.googleapis.com?project=hoosstudying-478421")
     print("2. Make sure you're authenticated with: gcloud auth application-default login")

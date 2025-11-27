@@ -3,14 +3,18 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.sql import text
 
 ## CREATE A USER:
-def create_user(db: Session, first_name: str, last_name: str, email: str) -> Optional[Dict[str, Any]]:
+def create_user(db: Session, firebase_uid: str, first_name: str, last_name: str, email: str) -> Optional[Dict[str, Any]]:
     try:
+        does_user_exist = find_user(db, firebase_uid)
+        if does_user_exist:
+            return None
         result = db.execute(
             text("""
-                INSERT INTO User (first_name, last_name, email)
-                VALUES (:first_name, :last_name, :email)
+                INSERT INTO User (firebase_uid, first_name, last_name, email)
+                VALUES (:firebase_uid, :first_name, :last_name, :email)
             """),
             {
+                'firebase_uid': firebase_uid,
                 'first_name': first_name,
                 'last_name': last_name,
                 'email': email
@@ -32,6 +36,67 @@ def create_user(db: Session, first_name: str, last_name: str, email: str) -> Opt
         
         return created_user.mappings().first()
         
+    except Exception as e:
+        db.rollback()
+        raise e
+
+def find_user(db: Session, firebase_uid: str) -> bool:
+    user_exists = db.execute(
+        text("""
+            SELECT 1 FROM User
+            WHERE firebase_uid = :firebase_uid
+            LIMIT 1
+        """),
+        {
+            'firebase_uid': firebase_uid,
+        }
+    )
+
+    return user_exists.first() is not None # if the user's row is greater than 0 then our user exists, which we don't want when creating a user
+
+def get_user_by_firebase_uid(db: Session, firebase_uid: str) -> Optional[Dict[str, Any]]:
+    user = db.execute(
+        text(
+            """
+                SELECT * FROM User
+                WHERE firebase_uid = :firebase_uid
+            """
+        ),
+        {'firebase_uid': firebase_uid}
+    )
+
+    return user.mappings().first()
+
+def get_or_create_user_from_firebase(db: Session, firebase_uid: str, email: str) -> Dict[str, Any]:
+    try:
+        existing_user = get_user_by_firebase_uid(db, firebase_uid)
+        if existing_user:
+            if not existing_user["first_name"]:
+                return {
+                    "user": existing_user,
+                    "created_user": False,
+                    "needs_name": True
+                }
+            
+            return {
+                'user': dict(existing_user),
+                'created_user': False,
+                'needs_name': False
+            }
+    
+        new_user = create_user(
+            db,
+            firebase_uid,
+            "",
+            "",
+            email
+        )
+
+        return {
+            'user': dict(new_user),
+            'created_user': True,
+            'needs_name': True,
+        }
     except Exception as e:
         db.rollback()
         raise e

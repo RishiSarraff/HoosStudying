@@ -20,7 +20,6 @@ from app.services.document_processor import DocumentProcessor
 
 FILE_PATH = "/Users/shivpatel/Downloads/technosonics notes (1).pdf"
 
-
 def main() -> None:
     processor = DocumentProcessor.__new__(DocumentProcessor)
     file_type = processor.get_file_type_from_path(FILE_PATH)

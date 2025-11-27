@@ -17,6 +17,7 @@ def get_firebase_app():
     return firebase_admin.get_app()
 
 def verify_firebase_token(token: str) -> dict:
+
     if not token or not isinstance(token, str):
         raise ValueError("Token must be a non-empty string")
     
@@ -31,10 +32,15 @@ def verify_firebase_token(token: str) -> dict:
     try:
         get_firebase_app()
         decoded_token = auth.verify_id_token(token)
+
+        uid = decoded_token.get("uid")
+        email = decoded_token.get("email")
+        name = decoded_token.get("name")
+
         return {
-            "uid": decoded_token.get("uid"),
-            "email": decoded_token.get("email"),
-            "name": decoded_token.get("name", ""),
+            "uid": uid,
+            "email": email,
+            "name": name or "",
         }
     except ValueError as e:
         raise

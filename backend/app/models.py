@@ -20,6 +20,7 @@ class User(Base):
     __tablename__ = "User"
 
     user_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    firebase_uid: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     last_name: Mapped[str] = mapped_column(String(50), nullable=False)
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)

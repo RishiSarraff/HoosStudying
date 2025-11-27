@@ -1,0 +1,24 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main arch structure -->
+  <path d="M 25 50 Q 50 15 75 50" stroke="#232D4B" stroke-width="4" fill="none" opacity="0.8"/>
+  
+  <!-- Inner arch detail -->
+  <path d="M 30 50 Q 50 22 70 50" stroke="#232D4B" stroke-width="2" fill="none" opacity="0.6"/>
+  
+  <!-- Base platform/steps -->
+  <rect x="30" y="75" width="40" height="3" fill="#232D4B" opacity="0.8"/>
+  <rect x="32" y="78" width="36" height="2" fill="#232D4B" opacity="0.8"/>
+  <rect x="34" y="80" width="32" height="2" fill="#232D4B" opacity="0.8"/>
+  
+  <!-- Small columns/pillars -->
+  <rect x="38" y="65" width="2" height="12" fill="#232D4B" opacity="0.8"/>
+  <rect x="44" y="65" width="2" height="12" fill="#232D4B" opacity="0.8"/>
+  <rect x="50" y="65" width="2" height="12" fill="#232D4B" opacity="0.8"/>
+  <rect x="56" y="65" width="2" height="12" fill="#232D4B" opacity="0.8"/>
+  <rect x="62" y="65" width="2" height="12" fill="#232D4B" opacity="0.8"/>
+  
+  <!-- Decorative stars -->
+  <circle cx="45" cy="35" r="1" fill="#E57200" opacity="0.9"/>
+  <circle cx="50" cy="30" r="1" fill="#E57200" opacity="0.9"/>
+  <circle cx="55" cy="35" r="1" fill="#E57200" opacity="0.9"/>
+</svg>
