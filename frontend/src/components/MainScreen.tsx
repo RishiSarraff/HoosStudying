@@ -249,7 +249,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   };
 
   const handleDocumentUploadSuccess = () => {
-    setRefreshDocuments(prev => prev + 1);
+    setRefreshDocuments((prev) => prev + 1);
   };
 
   return (
@@ -291,26 +291,26 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               {!isGeneralChat && (
                 <>
                   <Box sx={{ mx: 2 }}>
-                    <FilesButton 
-                      onClick={() => setShowChat(false)} 
-                      isActive={!showChat} 
+                    <FilesButton
+                      onClick={() => setShowChat(false)}
+                      isActive={!showChat}
                     />
                   </Box>
                   <Box sx={{ mx: 2 }}>
-                    <ChatButton 
-                      onClick={() => setShowChat(true)} 
-                      isActive={showChat} 
+                    <ChatButton
+                      onClick={() => setShowChat(true)}
+                      isActive={showChat}
                     />
                   </Box>
                   <Box sx={{ mx: 2 }}>
                     <FilesSearchBar />
                   </Box>
                   <Box sx={{ mx: 2 }}>
-                    <UploadFilesButton 
-                        user={user} 
-                        pipeline={currentPipeline}
-                        onUploadSuccess={handleDocumentUploadSuccess}
-                        />
+                    <UploadFilesButton
+                      user={user}
+                      pipeline={currentPipeline}
+                      onUploadSuccess={handleDocumentUploadSuccess}
+                    />
                   </Box>
                 </>
               )}
@@ -542,9 +542,9 @@ const MainScreen: React.FC<MainScreenInputs> = ({
           {isGeneralChat ? (
             <ChatContainer user={user} isGeneral={true} />
           ) : (
-            <PipelineContainer 
-              user={user} 
-              pipeline={currentPipeline} 
+            <PipelineContainer
+              user={user}
+              pipeline={currentPipeline}
               showChat={showChat}
               refreshKey={refreshDocuments}
             />

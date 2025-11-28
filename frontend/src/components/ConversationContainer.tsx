@@ -1,11 +1,6 @@
-import { Box } from "@mui/material"
+import { Box } from "@mui/material";
 const ConversationContainer: React.FC = () => {
+  return <Box></Box>;
+};
 
-    return(
-        <Box>
-            
-        </Box>
-    )
-}
-
-export default ConversationContainer
+export default ConversationContainer;

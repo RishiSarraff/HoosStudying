@@ -1,10 +1,5 @@
-
-
 const FilesSearchBar: React.FC = () => {
-    return (
-        <div>
-        </div>
-    )
-}
+  return <div></div>;
+};
 
-export default FilesSearchBar
+export default FilesSearchBar;

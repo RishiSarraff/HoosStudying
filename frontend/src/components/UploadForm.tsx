@@ -43,7 +43,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
 
       const formData = new FormData();
       formData.append("file", selectedFile);
-      formData.append("pipeline_id", pipeline.pipeline_id.toString())
+      formData.append("pipeline_id", pipeline.pipeline_id.toString());
       formData.append("token", token);
 
       const response = await axios.post(
@@ -52,7 +52,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
         {
           headers: {
             "Content-Type": "multipart/form-data",
-            "Authorization": `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -68,7 +68,6 @@ const UploadForm: React.FC<UploadFormProps> = ({
       if (onUploadSuccess) {
         onUploadSuccess();
       }
-
     } catch (error: any) {
       setUploadError(
         error.response?.data?.detail || error.message || "Upload failed"

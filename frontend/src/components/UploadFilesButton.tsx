@@ -17,12 +17,12 @@ const UploadFilesButton: React.FC<UploadFormProps> = ({
   const [openUploadFormModal, setOpenUploadFormModal] =
     useState<boolean>(false);
 
-    const handleUploadSuccess = () => {
-        if (onUploadSuccess){
-            onUploadSuccess();
-        }
-        setOpenUploadFormModal(false)
+  const handleUploadSuccess = () => {
+    if (onUploadSuccess) {
+      onUploadSuccess();
     }
+    setOpenUploadFormModal(false);
+  };
 
   return (
     <>
