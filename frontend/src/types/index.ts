@@ -21,6 +21,8 @@ export interface UploadResponse{
 
 export interface UploadFormProps {
     user: MySQLUser;
+    pipeline: MySQLPipeline;
+    onUploadSuccess?: () => void
 }
 
 export interface NameModalProps {
@@ -34,6 +36,8 @@ export interface UserUpdateNameRequest {
 
 export interface ChatContainerComponents {
     user: MySQLUser;
+    isGeneral: boolean;
+    pipeline?: MySQLPipeline;
 }
 
 export interface MainScreenInputs {
@@ -73,3 +77,34 @@ export interface AlertProps {
     onClose: () => void;
     severity?: 'success' | 'error' | 'warning' | 'info';
 }
+
+export interface PipelineContainerProps{
+    user: MySQLUser;
+    pipeline: MySQLPipeline;
+    showChat: boolean;
+    refreshKey?: number;
+}
+
+export interface PipelineFilesContainerProps{
+    user: MySQLUser;
+    pipeline: MySQLPipeline;
+}
+
+export interface ChatButtonProps{
+    onClick: () => void;
+    isActive: boolean;
+}
+
+export interface FileButtonProps{
+    onClick: () => void;
+    isActive: boolean;
+}
+
+export interface PipelineDocument {
+    document_id: number;
+    file_name: string;
+    file_type: string;
+    upload_date: string;
+    is_active: boolean;
+    added_at: string;
+  }

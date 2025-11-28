@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.services.firebase_auth import verify_firebase_token
-from app.crudFunctions import userFunctions, pipelineFunctions, pipelineDocumentFunctions
+from app.crudFunctions import userFunctions, pipelineFunctions, pipelineDocumentFunctions, documentFunctions
 from app.database import get_db
 from sqlalchemy import text
 
@@ -240,3 +240,58 @@ async def deletePipeline(
         raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{pipeline_id}/documents")
+async def get_pipeline_documents(
+    pipeline_id: int,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    try:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+        
+        token = authorization.replace("Bearer ", "")
+        firebase_user = verify_firebase_token(token)
+        firebase_uid = firebase_user.get("uid")
+
+        user = userFunctions.get_user_by_firebase_uid(
+            db,
+            firebase_uid
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+    
+        pipeline = pipelineFunctions.get_pipeline_by_id(db, pipeline_id)
+
+        if not pipeline:
+            raise HTTPException(
+                status_code=404,
+                detail="Pipeline not found"
+            )
+        
+        if pipeline["user_id"] != user["user_id"]:
+            raise HTTPException(
+                status_code=403,
+                detail="You don't have permission to delete this pipeline"
+            )
+        
+        documents = pipelineDocumentFunctions.get_documents_in_pipeline(
+            db,
+            pipeline_id,
+            is_active=True
+        )
+
+        return {
+            "success": True,
+            "pipeline_id": pipeline_id,
+            "documents": documents
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

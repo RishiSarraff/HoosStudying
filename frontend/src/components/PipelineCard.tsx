@@ -26,7 +26,7 @@ const PipelineCard: React.FC<PipelineCardProps> = ({
         mb: 1.5,
         width: '100%',
         maxWidth: '100%',
-        backgroundColor: '#ECECEC', // Light gray like in design
+        backgroundColor: '#ECECEC', 
         cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
         border: 'none',

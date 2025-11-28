@@ -24,7 +24,7 @@ END
 """
 
 INSERT_DOCUMENT = """
-CREATE PROCEDURE IF NOT EXISTS Insert_Document(
+CREATE PROCEDURE Insert_Document(
     IN p_user_id INT,
     IN p_file_name VARCHAR(50),
     IN p_file_type VARCHAR(5),
@@ -44,6 +44,7 @@ BEGIN
     DECLARE v_chunk_index INT DEFAULT 0;
     DECLARE v_chunk_text TEXT;
     DECLARE v_chunks_count INT;
+    DECLARE v_general_pipeline_id INT;
 
     START TRANSACTION;
 
@@ -52,8 +53,13 @@ BEGIN
 
     SET p_new_document_id = LAST_INSERT_ID();
 
-    INSERT INTO Pipeline_Documents(pipeline_id, document_id) 
-    VALUES (p_pipeline_id, p_new_document_id);
+    SELECT pipeline_id INTO v_general_pipeline_id
+    FROM Pipeline
+    WHERE user_id = p_user_id AND pipeline_name = 'general'
+    LIMIT 1;
+
+    INSERT INTO Pipeline_Documents(pipeline_id, document_id, is_active) 
+    VALUES (p_pipeline_id, p_new_document_id, TRUE);
 
     INSERT INTO Document_Metadata (
         document_id, file_size, page_count, word_count, language, 
@@ -76,7 +82,7 @@ BEGIN
     END WHILE;
 
     COMMIT;
-END
+END$$
 """
 
 DELETE_PIPELINE = """

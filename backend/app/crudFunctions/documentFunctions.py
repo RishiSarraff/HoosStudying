@@ -1,3 +1,4 @@
+import json
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any, Union
 from sqlalchemy.sql import text
@@ -116,6 +117,72 @@ def create_document_chunks_batch(db: Session, document_id: int, chunks: list[dic
         db.commit()
 
         return created_chunks
+    except Exception as e:
+        db.rollback()
+        raise e
+    
+def insert_document_with_stored_procedure(
+    db: Session,
+    user_id: int,
+    file_name: str,
+    file_type: str,
+    pipeline_id: int,
+    file_size: int,
+    page_count: int,
+    word_count: int,
+    language: str,
+    encoding: str,
+    firebase_storage_path: str,
+    checksum: str,
+    mime_type: str,
+    chunks: List[str]
+) -> Optional[int]:
+    try:
+        chunks_json = json.dumps(chunks) # We need to convert this into Json dumps for the SQL 
+        
+        result = db.execute(
+            text("""
+                CALL Insert_Document(
+                    :user_id,
+                    :file_name,
+                    :file_type,
+                    :pipeline_id,
+                    :file_size,
+                    :page_count,
+                    :word_count,
+                    :language,
+                    :encoding,
+                    :firebase_storage_path,
+                    :checksum,
+                    :mime_type,
+                    :chunks,
+                    @new_document_id
+                )
+            """),
+            {
+                'user_id': user_id,
+                'file_name': file_name,
+                'file_type': file_type,
+                'pipeline_id': pipeline_id,
+                'file_size': file_size,
+                'page_count': page_count,
+                'word_count': word_count,
+                'language': language,
+                'encoding': encoding,
+                'firebase_storage_path': firebase_storage_path,
+                'checksum': checksum,
+                'mime_type': mime_type,
+                'chunks': chunks_json
+            }
+        )
+        
+        document_id_result = db.execute(text("SELECT @new_document_id AS document_id"))
+        document_id = document_id_result.scalar()
+        
+        db.commit()
+        
+        return document_id
+        
     except Exception as e:
         db.rollback()
         raise e
