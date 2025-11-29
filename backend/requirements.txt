@@ -14,3 +14,4 @@ cloud-sql-python-connector[pymysql]
 google-cloud-aiplatform>=1.73.0
 numpy==2.3.5
 python-multipart==0.0.20
+firebase_admin

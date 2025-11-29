@@ -6,7 +6,7 @@ from app.services.firebase_auth import verify_firebase_token
 from app.services.document_processor import DocumentProcessor
 from app.services.firebase_storage import FirebaseStorageService
 from app.services.embedding_service import EmbeddingService
-from app.services.vector_db_service import VectorDBService
+from app.services.firestore_service import FirestoreService
 import tempfile
 import os
 import uuid
@@ -102,11 +102,9 @@ async def upload_document_simple(
             
             chunk_ids = [f"{firebase_uid}_{uuid.uuid4()}_{i}" for i in range(len(chunks))]
             
-            vector_db_service = VectorDBService()
+            firestore_service = FirestoreService()
+            stored_count = 0
             if len(embeddings) > 0:
-                embedding_dimension = len(embeddings[0])
-                vector_db_service.create_index_if_not_exists(dimensions=embedding_dimension)
-                
                 vector_metadata = [
                     {
                         "storage_path": firebase_storage_path,
@@ -118,14 +116,14 @@ async def upload_document_simple(
                     }
                     for i in range(len(chunks))
                 ]
-                vector_db_service.upsert_embeddings(embeddings, chunk_ids, vector_metadata)
+                stored_count = firestore_service.add_embeddings_batch(embeddings, chunk_ids, chunks, vector_metadata)
             
             print(f"\n{'=' * 50}")
             print(f"EMBEDDINGS GENERATED AND STORED FOR: {file.filename}")
             print(f"{'=' * 50}")
             print(f"Total chunks: {len(chunks)}")
             print(f"Total embeddings: {len(embeddings)}")
-            print(f"Embeddings stored in Vertex AI Vector Search")
+            print(f"Embeddings stored in Firestore: {stored_count}")
             for i, embedding in enumerate(embeddings):
                 print(f"\n--- Embedding {i} (ID: {chunk_ids[i]}) ---")
                 print(f"Shape: {embedding.shape}")
@@ -154,7 +152,7 @@ async def upload_document_simple(
             
             return {
                 "success": True,
-                "message": "Document uploaded to Firebase Storage and embeddings stored in Vector DB",
+                "message": "Document uploaded to Firebase Storage and embeddings stored in Firestore",
                 "file_name": file.filename,
                 "storage_path": firebase_storage_path,
                 "document_id": document_id,
@@ -162,7 +160,7 @@ async def upload_document_simple(
                 "download_url": download_url,
                 "chunk_count": len(chunks),
                 "embedding_count": len(embeddings),
-                "vector_db_stored": True
+                "firestore_stored": stored_count
             }
         finally:
             if os.path.exists(tmp_file_path):
