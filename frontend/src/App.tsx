@@ -101,9 +101,6 @@ const App: React.FC = () => {
             }}
           />
         )}
-        {/* <div>
-        <UploadForm user={user}/> 
-      </div> */}
         {user && pipeline ? (
           <div>
             <MainScreen

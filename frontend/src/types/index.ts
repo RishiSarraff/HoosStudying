@@ -83,11 +83,13 @@ export interface PipelineContainerProps{
     pipeline: MySQLPipeline;
     showChat: boolean;
     refreshKey?: number;
+    onDocumentChange?: () => void;
 }
 
 export interface PipelineFilesContainerProps{
     user: MySQLUser;
     pipeline: MySQLPipeline;
+    onDocumentChange?: () => void;
 }
 
 export interface ChatButtonProps{
@@ -108,3 +110,18 @@ export interface PipelineDocument {
     is_active: boolean;
     added_at: string;
   }
+
+export interface DocumentMetadata {
+    metadata_id: number
+    document_id: number
+    file_size: number
+    page_count: number
+    word_count: number
+    language: string
+    encoding: string
+    firebase_storage_path: string
+    firebase_download_url: string
+    checksum: string
+    mime_type: string
+    created_at: Date
+}

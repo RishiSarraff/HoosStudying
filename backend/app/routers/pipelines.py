@@ -228,6 +228,8 @@ async def deletePipeline(
             pipeline["pipeline_id"]
         )
 
+        ## WE get all active documents in the pipeline and toggler the
+
         if not resultOfDeletion:
             raise HTTPException(
                 status_code=400,

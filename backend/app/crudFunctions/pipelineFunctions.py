@@ -78,10 +78,12 @@ def get_pipelines_by_user_id(db: Session, user_id: int) -> List[Dict[str, Any]]:
 def get_non_general_pipelines_by_user_id(db: Session, user_id: int) -> List[Dict[str, Any]]:
     result = db.execute(
         text("""
-            SELECT * 
-            FROM Pipeline 
-            WHERE user_id = :user_id AND pipeline_name != "general"
-        """),
+                SELECT p.*, COUNT(pd.document_id) as number_of_documents
+                FROM Pipeline p
+                LEFT JOIN Pipeline_Documents pd ON p.pipeline_id = pd.pipeline_id
+                WHERE p.user_id = :user_id and p.pipeline_name != "general"
+                GROUP BY p.pipeline_id
+            """),
         {'user_id': user_id})
 
     rows = result.mappings().all()
@@ -114,6 +116,7 @@ def get_pipeline_name_description(db: Session, user_id: int) -> List[Dict[str, A
     )
 
     return result.mappings().first()
+
 
 def get_general_pipeline_id(db: Session, user_id: int) -> Optional[int]:
     result = db.execute(

@@ -29,7 +29,7 @@ import AddIcon from "@mui/icons-material/Add";
 import ChatContainer from "./ChatContainer";
 import { type MySQLPipeline, type MainScreenInputs } from "../types/index";
 import NewPipelineModal from "./NewPipelineModal";
-import { createNewPipeline, deletePipeline } from "../services/pipeline";
+import { createNewPipeline, deletePipeline, getAllNonDefaultPipelines } from "../services/pipeline";
 import { getCurrentToken, logout } from "../services/auth";
 import PipelineCard from "./PipelineCard";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -172,6 +172,18 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     setOpen(false);
   };
 
+  const refreshPipelines = async () => {
+    try {
+      const token = await getCurrentToken();
+      if (token) {
+        const updatedPipelines = await getAllNonDefaultPipelines(token);
+        setListOfPipelines(updatedPipelines);
+      }
+    } catch (error) {
+      console.error("Error refreshing pipelines:", error);
+    }
+  };
+
   const handleNewPipelineSubmit = async (data: {
     pipelineName: string;
     pipelineDescription: string;
@@ -239,17 +251,9 @@ const MainScreen: React.FC<MainScreenInputs> = ({
 
   const goToSettingsHandler = async () => {};
 
-  const switchToPipeline = async () => {
-    if (
-      currentPipeline &&
-      currentPipeline.pipeline_id != pipeline.pipeline_id
-    ) {
-      // we'll switch over to a new pipeline
-    }
-  };
-
   const handleDocumentUploadSuccess = () => {
     setRefreshDocuments((prev) => prev + 1);
+    refreshPipelines()
   };
 
   return (
@@ -484,7 +488,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                     onClick={() => {
                       setIsGeneralChat(false);
                       setCurrentPipeline(p);
-                      switchToPipeline();
                     }}
                   >
                     <PipelineCard
@@ -547,6 +550,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               pipeline={currentPipeline}
               showChat={showChat}
               refreshKey={refreshDocuments}
+              onDocumentChange={refreshPipelines}
             />
           )}
         </Box>

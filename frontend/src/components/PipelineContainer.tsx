@@ -8,6 +8,7 @@ const PipelineContainer: React.FC<PipelineContainerProps> = ({
   pipeline,
   showChat,
   refreshKey = 0,
+  onDocumentChange
 }) => {
   return (
     <Box>
@@ -18,6 +19,7 @@ const PipelineContainer: React.FC<PipelineContainerProps> = ({
           key={refreshKey}
           user={user}
           pipeline={pipeline}
+          onDocumentChange={onDocumentChange}
         />
       )}
     </Box>
