@@ -53,3 +53,17 @@ export async function deletePipeline(token: string, pipeline_id: number): Promis
 
     return response.data.success || true;
 }
+
+export async function editPipeline(token: string, pipeline_id: number, pipeline_name: string, pipeline_description: string): Promise<MySQLPipeline>{
+    const response = await axios.post("http://localhost:8000/api/pipeline/edit-pipeline",
+        {pipeline_id, pipeline_name, pipeline_description},
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+        }
+    );
+
+    return response.data;
+}

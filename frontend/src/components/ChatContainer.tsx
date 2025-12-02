@@ -12,8 +12,9 @@ const ChatContainer: React.FC<ChatContainerComponents> = ({ user }) => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#CACACA", // Medium-light gray from design
+        backgroundColor: "#CACACA", 
         padding: 4,
+        margin: 0,
       }}
     >
       <Typography

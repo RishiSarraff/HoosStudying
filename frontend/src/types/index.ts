@@ -57,9 +57,11 @@ export interface MySQLPipeline {
 
 export interface NewPipelineModalProps{
     user_id: number
-    open: boolean
-    onClose: () => void; 
-    onSubmit: (data: { pipelineName: string; pipelineDescription: string; user_id: number }) => void;
+    open: boolean,
+    onClose: () => void,
+    onSubmit: (data: { pipelineName: string; pipelineDescription: string; user_id: number;}) => void,
+    isEditMode: boolean
+    pipeline?: MySQLPipeline
 }
 
 export interface PipelineCardProps{

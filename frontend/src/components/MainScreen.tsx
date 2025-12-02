@@ -29,7 +29,7 @@ import AddIcon from "@mui/icons-material/Add";
 import ChatContainer from "./ChatContainer";
 import { type MySQLPipeline, type MainScreenInputs } from "../types/index";
 import NewPipelineModal from "./NewPipelineModal";
-import { createNewPipeline, deletePipeline, getAllNonDefaultPipelines } from "../services/pipeline";
+import { createNewPipeline, deletePipeline, getAllNonDefaultPipelines, editPipeline } from "../services/pipeline";
 import { getCurrentToken, logout } from "../services/auth";
 import PipelineCard from "./PipelineCard";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -47,6 +47,7 @@ import ChatButton from "./ChatButton";
 import FilesSearchBar from "./FilesSearchBar";
 import UploadFilesButton from "./UploadFilesButton";
 import PipelineContainer from "./PipelineContainer";
+import EditSquareIcon from '@mui/icons-material/EditSquare';
 
 const drawerWidth = 360;
 
@@ -155,7 +156,8 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   const [currentPipeline, setCurrentPipeline] =
     useState<MySQLPipeline>(pipeline);
   const [showChat, setShowChat] = useState(false);
-  const [refreshDocuments, setRefreshDocuments] = useState(0);
+  const [refreshDocuments, setRefreshDocuments] = useState<number>(0);
+  const [openEditPipelineModal, setOpenEditPipelineModal] = useState<boolean>(false);
 
   const showAlert = (
     message: string,
@@ -256,6 +258,37 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     refreshPipelines()
   };
 
+  const handleEditPipeline = async(data: { pipelineName: string; pipelineDescription: string; user_id: number; }) => {
+    try {
+      if (data.pipelineDescription && data.pipelineName) {
+        // if we have both the description and the name then we create a new pipeline and refresh the page
+        const token = await getCurrentToken();
+        if (token) {
+          const response = await editPipeline(
+            token,
+            currentPipeline.pipeline_id,
+            data.pipelineName,
+            data.pipelineDescription
+          );
+          if (response) {
+            setListOfPipelines((prev) => 
+              prev.map(p => 
+                p.pipeline_id === response.pipeline_id ? response : p
+              )
+            );
+            setCurrentPipeline(response);
+            showAlert("Successfully Edited Pipeline", "success");
+          } else {
+            showAlert("Failed to Edit Pipeline", "error");
+          }
+        }
+      }
+    } catch (e) {
+      console.log(e);
+      showAlert("Error Editing Pipeline", "error");
+    }
+  }
+
   return (
     <div>
       <Box sx={{ display: "flex" }}>
@@ -289,6 +322,21 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               <Typography variant="h6" noWrap component="div">
                 {isGeneralChat ? "General Chat" : currentPipeline.pipeline_name}
               </Typography>
+                {!isGeneralChat ? 
+                  (<IconButton
+                    color="inherit"
+                    aria-label="open drawer"
+                    onClick={() => setOpenEditPipelineModal(true)}
+                    edge="start"
+                    sx={[
+                      {
+                        marginRight: 2,
+                      },
+                    ]}
+                  >
+                    <EditSquareIcon /> 
+                  </IconButton>)
+                : null}
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -333,7 +381,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                   },
                 }}
               >
-                Logout
+                {"Logout"}
               </Button>
             </Box>
           </Toolbar>
@@ -382,14 +430,11 @@ const MainScreen: React.FC<MainScreenInputs> = ({
 
           <Divider />
           <List>
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <ListItemButton
-                sx={{
+            <ListItem disablePadding sx={{
                   minHeight: 48,
                   px: 2.5,
                   justifyContent: open ? "initial" : "center",
-                }}
-              >
+                }}>
                 <ListItemIcon
                   sx={{
                     minWidth: 0,
@@ -415,11 +460,12 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                     <SettingsIcon />
                   </IconButton>
                 )}
-              </ListItemButton>
             </ListItem>
+            <Divider sx={{mt:1, mb:1}}/>
 
             {!isGeneralChat && (
-              <ListItem disablePadding sx={{ display: "block" }}>
+              <div>
+              <ListItem disablePadding sx={{ display: "block"}}>
                 <ListItemButton
                   sx={{
                     minHeight: 48,
@@ -445,9 +491,10 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                   />
                 </ListItemButton>
               </ListItem>
+              <Divider sx={{mt:1, mb:1}}/>
+              </div>
             )}
           </List>
-          <Divider />
           {open && (
             <Typography
               variant="subtitle2"
@@ -540,7 +587,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
             ))}
           </List>
         </Drawer>
-        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Box component="main" sx={{ flexGrow: 1 }}>
           <DrawerHeader />
           {isGeneralChat ? (
             <ChatContainer user={user} isGeneral={true} />
@@ -572,6 +619,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
             handleNewPipelineSubmit(data);
             setOpenNewPipelineModal(false);
           }}
+          isEditMode={false}
         />
       ) : null}
 
@@ -583,18 +631,17 @@ const MainScreen: React.FC<MainScreenInputs> = ({
           maxWidth="sm"
         >
           <DialogTitle>
-            Delete Pipeline "{pipelineToDelete.pipeline_name}"
+            {`Delete Pipeline ${pipelineToDelete.pipeline_name}`}
           </DialogTitle>
           <DialogContent>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              Are you sure you want to delete this pipeline? This action cannot
-              be undone.
+              {"Are you sure you want to delete this pipeline? This action cannot be undone."}
             </Typography>
             <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
-              Description: {pipelineToDelete.description}
+              {`Description: ${pipelineToDelete.description}`}
             </Typography>
             <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
-              Files: {pipelineToDelete.number_of_documents}
+              {`Files: ${pipelineToDelete.number_of_documents}`}
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -604,15 +651,30 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               color="error"
               onClick={() =>
                 deletePipelineHandler({
-                  pipeline_id: pipelineToDelete.pipeline_id,
+                  pipeline_id: pipelineToDelete.pipeline_id
                 })
               }
             >
-              Delete
+              {"Delete"}
             </Button>
           </DialogActions>
         </Dialog>
       ) : null}
+
+      {openEditPipelineModal ? (
+        <NewPipelineModal
+          user_id={user.user_id}
+          open={openEditPipelineModal}
+          onClose={() => setOpenEditPipelineModal(false)}
+          onSubmit={(data) => {
+            handleEditPipeline(data);
+            setOpenEditPipelineModal(false);
+          }}
+          isEditMode={true}
+          pipeline={currentPipeline}
+        />
+      ) : null}
+
     </div>
   );
 };

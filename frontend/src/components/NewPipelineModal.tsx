@@ -14,13 +14,15 @@ const NewPipelineModal: React.FC<NewPipelineModalProps> = ({
   open,
   onClose,
   onSubmit,
+  isEditMode,
+  pipeline
 }) => {
-  const [pipelineName, setPipelineName] = useState<string>("");
-  const [pipelineDescription, setPipelineDescription] = useState<string>("");
+  const [pipelineName, setPipelineName] = useState<string>((isEditMode && pipeline) ? pipeline.pipeline_name : "");
+  const [pipelineDescription, setPipelineDescription] = useState<string>((isEditMode && pipeline) ? pipeline.description : "");
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Create New Pipeline</DialogTitle>
+      <DialogTitle>{isEditMode ? "Edit Pipeline" : "Create New Pipeline"}</DialogTitle>
       <DialogContent>
         <TextField
           fullWidth
@@ -46,14 +48,15 @@ const NewPipelineModal: React.FC<NewPipelineModalProps> = ({
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{"Cancel"}</Button>
         <Button
           variant="contained"
           onClick={() =>
             onSubmit({ pipelineName, pipelineDescription, user_id })
           }
+          disabled={(isEditMode && pipeline && pipeline.pipeline_name == pipelineName.trim() && pipeline.description == pipelineDescription.trim())}
         >
-          Create
+          {isEditMode ? "Edit" : "Create"}
         </Button>
       </DialogActions>
     </Dialog>

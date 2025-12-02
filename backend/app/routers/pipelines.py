@@ -33,6 +33,11 @@ class CreatePipelineRequest(BaseModel):
     pipeline_name: str
     pipeline_description: str
 
+class EditPipelineRequest(BaseModel):
+    pipeline_id: int
+    pipeline_name: str
+    pipeline_description: str
+
 class DeletePipelineRequest(BaseModel):
     pipeline_id: int
 
@@ -297,3 +302,61 @@ async def get_pipeline_documents(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/edit-pipeline", response_model=PipelineResponse)
+async def editPipeline(
+    request: EditPipelineRequest,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    try:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+        
+        token = authorization.replace("Bearer ", "")
+        firebase_user = verify_firebase_token(token)
+        firebase_uid = firebase_user.get("uid")
+
+        user = userFunctions.get_user_by_firebase_uid(
+            db,
+            firebase_uid
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+        pipeline = pipelineFunctions.get_pipeline_by_id(db, request.pipeline_id)
+        if not pipeline:
+            raise HTTPException(status_code=404, detail="Pipeline not found")
+        
+        if pipeline["user_id"] != user["user_id"]:
+            raise HTTPException(status_code=403, detail="You don't have permission to edit this pipeline")
+
+
+        edited_pipeline = pipelineFunctions.update_pipeline(
+            db,
+            request.pipeline_id,
+            request.pipeline_name,
+            request.pipeline_description
+        )
+
+        if not edited_pipeline:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Non General Pipelines for user {user_id} not found"
+            )
+        
+        pipeline_dict = dict(edited_pipeline)
+        document_count = pipelineDocumentFunctions.get_count_of_documents_by_pipeline(
+            db, 
+            pipeline_dict["pipeline_id"]
+        )
+        pipeline_dict["number_of_documents"] = document_count
+        
+        return pipeline_dict
+
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
