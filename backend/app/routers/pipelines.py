@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.services.firebase_auth import verify_firebase_token
-from app.crudFunctions import userFunctions, pipelineFunctions, pipelineDocumentFunctions, documentFunctions
+from app.crudFunctions import userFunctions, pipelineFunctions, pipelineDocumentFunctions
 from app.database import get_db
 from sqlalchemy import text
 
@@ -344,7 +344,7 @@ async def editPipeline(
         if not edited_pipeline:
             raise HTTPException(
                 status_code=404,
-                detail=f"Non General Pipelines for user {user_id} not found"
+                detail=f"Non General Pipelines not found"
             )
         
         pipeline_dict = dict(edited_pipeline)

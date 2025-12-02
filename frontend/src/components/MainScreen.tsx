@@ -26,10 +26,11 @@ import ListItemText from "@mui/material/ListItemText";
 import PersonIcon from "@mui/icons-material/Person";
 import ChatBubbleIcon from "@mui/icons-material/ChatBubble";
 import AddIcon from "@mui/icons-material/Add";
-import ChatContainer from "./ChatContainer";
-import { type MySQLPipeline, type MainScreenInputs } from "../types/index";
+import GeneralChatContainer from "./GeneralChatContainer";
+import { type MySQLPipeline, type MainScreenInputs, type MySQLConversation, type MySQLMessage } from "../types/index";
 import NewPipelineModal from "./NewPipelineModal";
 import { createNewPipeline, deletePipeline, getAllNonDefaultPipelines, editPipeline } from "../services/pipeline";
+import { getConversations, getMessagesForConversation } from "../services/conversation"
 import { getCurrentToken, logout } from "../services/auth";
 import PipelineCard from "./PipelineCard";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -48,6 +49,10 @@ import FilesSearchBar from "./FilesSearchBar";
 import UploadFilesButton from "./UploadFilesButton";
 import PipelineContainer from "./PipelineContainer";
 import EditSquareIcon from '@mui/icons-material/EditSquare';
+import ConversationCard from "./ConversationCard";
+import ConversationView from "./ConversationView";
+import HomeIcon from '@mui/icons-material/Home';
+
 
 const drawerWidth = 360;
 
@@ -139,7 +144,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
 }) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
-  const [isGeneralChat, setIsGeneralChat] = useState<boolean>(
+  const [viewMode, setViewMode] = useState<boolean>(
     pipeline.pipeline_name === "general"
   );
   const [openNewPipelineModal, setOpenNewPipelineModal] =
@@ -155,9 +160,13 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   });
   const [currentPipeline, setCurrentPipeline] =
     useState<MySQLPipeline>(pipeline);
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(true);
   const [refreshDocuments, setRefreshDocuments] = useState<number>(0);
   const [openEditPipelineModal, setOpenEditPipelineModal] = useState<boolean>(false);
+  const [listOfConversations, setListOfConversations] = useState<MySQLConversation[]>([]);
+  const [currentConversation, setCurrentConversation] = useState<MySQLConversation>();
+  const [currentMessages, setCurrentMessages] = useState<MySQLMessage[]>();
+  const [openGeneralPipelineChatPage, setOpenGeneralPipelineChatPage] = useState<boolean>(false);
 
   const showAlert = (
     message: string,
@@ -261,7 +270,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   const handleEditPipeline = async(data: { pipelineName: string; pipelineDescription: string; user_id: number; }) => {
     try {
       if (data.pipelineDescription && data.pipelineName) {
-        // if we have both the description and the name then we create a new pipeline and refresh the page
         const token = await getCurrentToken();
         if (token) {
           const response = await editPipeline(
@@ -288,6 +296,53 @@ const MainScreen: React.FC<MainScreenInputs> = ({
       showAlert("Error Editing Pipeline", "error");
     }
   }
+
+  const retrievePipelineConversations = async(p: MySQLPipeline) => {
+    try{
+      const token = await getCurrentToken()
+      if(token){
+        const response = await getConversations(
+          token,
+          p.pipeline_id
+        )
+        if (response) {
+          setListOfConversations(response);
+        }
+      }
+    }catch (e) {
+      console.log(e);
+      showAlert("Error Retrieving Conversations for user and pipeline", "error");
+    }
+  }
+
+  const retrieveMessagesFromConvo = async(conversation_id: number) => {
+    try{
+      const token = await getCurrentToken()
+      if(token){
+        const response = await getMessagesForConversation(
+          token,
+          conversation_id
+        )
+        if (response) {
+          setCurrentMessages(response);
+          console.log(response)
+        }
+      }
+    }catch(e){
+      console.log(e)
+      showAlert("Error Retrieving Messages from older conversation", "error");
+    }
+  }
+
+  const conversationDeletionHandler = async() => {
+    throw "Function not implemented yet"
+  }
+
+  const handleSendMessage = async (messageText: string) => {
+    if (!currentConversation) return;
+    console.log("Sending:", messageText);
+    await retrieveMessagesFromConvo(currentConversation.conversation_id);
+  };
 
   return (
     <div>
@@ -320,9 +375,9 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               </IconButton>
 
               <Typography variant="h6" noWrap component="div">
-                {isGeneralChat ? "General Chat" : currentPipeline.pipeline_name}
+                {viewMode ? "General Chat" : currentPipeline.pipeline_name}
               </Typography>
-                {!isGeneralChat ? 
+                {!viewMode ? 
                   (<IconButton
                     color="inherit"
                     aria-label="open drawer"
@@ -340,7 +395,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              {!isGeneralChat && (
+              {!viewMode && (
                 <>
                   <Box sx={{ mx: 2 }}>
                     <FilesButton
@@ -415,7 +470,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                 }}
               />
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                HoosStudying
+                {"HoosStudying"}
               </Typography>
             </Box>
 
@@ -463,7 +518,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
             </ListItem>
             <Divider sx={{mt:1, mb:1}}/>
 
-            {!isGeneralChat && (
+            {!viewMode && (
               <div>
               <ListItem disablePadding sx={{ display: "block"}}>
                 <ListItemButton
@@ -473,7 +528,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                     justifyContent: open ? "initial" : "center",
                   }}
                   onClick={() => {
-                    setIsGeneralChat(true);
+                    setViewMode(true);
                   }}
                 >
                   <ListItemIcon
@@ -509,17 +564,26 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                 fontSize: "1.2rem",
               }}
             >
-              Pipelines
-              <IconButton
-                aria-label="Create a new pipeline"
-                onClick={() => setOpenNewPipelineModal(true)}
-              >
-                <AddIcon />
-              </IconButton>
+              {viewMode ? "Pipelines" : "Conversations"}
+              {viewMode ? 
+                (<IconButton
+                  aria-label="Create a new pipeline"
+                  onClick={() => setOpenNewPipelineModal(true)}
+                >
+                  <AddIcon />
+                </IconButton>) : 
+                (<IconButton
+                  aria-label="Go back to new conversation page"
+                  onClick={() => setOpenGeneralPipelineChatPage(true)}
+                >
+                  <HomeIcon />
+                </IconButton>
+                )
+              }
             </Typography>
           )}
           <List>
-            {listOfPipelines.map((p, index) => (
+            {viewMode ? listOfPipelines.map((p, index) => (
               <ListItem
                 key={p.pipeline_id}
                 disablePadding
@@ -533,7 +597,8 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                       justifyContent: open ? "initial" : "center",
                     }}
                     onClick={() => {
-                      setIsGeneralChat(false);
+                      retrievePipelineConversations(p);
+                      setViewMode(false);
                       setCurrentPipeline(p);
                     }}
                   >
@@ -584,13 +649,81 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                   </ListItemButton>
                 )}
               </ListItem>
+            )): listOfConversations.map((convo, index) => (
+              <ListItem
+                key={convo.conversation_id}
+                disablePadding
+                sx={{ display: "block" }}
+              >
+                {open ? (
+                  <ListItemButton
+                    sx={{
+                      minHeight: 48,
+                      px: 2.5,
+                      justifyContent: open ? "initial" : "center",
+                    }}
+                    onClick={() => {
+                      setViewMode(false);
+                      setOpenGeneralPipelineChatPage(false)
+                      setCurrentConversation(convo);
+                      retrieveMessagesFromConvo(convo.conversation_id);
+                    }}
+                  >
+                    <ConversationCard
+                      conversation={convo}
+                      index={index}
+                      onDelete={conversationDeletionHandler}
+                      isActive={convo.conversation_id == currentConversation?.conversation_id && !openGeneralPipelineChatPage}
+                    />
+                  </ListItemButton>
+                ) : (
+                  <ListItemButton
+                    sx={{
+                      minHeight: 48,
+                      justifyContent: "center",
+                    }}
+                  >
+                    {" "}
+                    <ListItemIcon
+                      sx={{ minWidth: 0, justifyContent: "center" }}
+                    >
+                      <Box
+                        sx={{
+                          position: "relative",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <FolderIcon sx={{ fontSize: 28, color: "#424242" }} />
+                        <Typography
+                          sx={{
+                            position: "absolute",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            color: "#FFFFFF",
+                          }}
+                        >
+                          {index + 1}
+                        </Typography>
+                      </Box>
+                    </ListItemIcon>
+                  </ListItemButton>
+                )}
+              </ListItem>
             ))}
           </List>
         </Drawer>
         <Box component="main" sx={{ flexGrow: 1 }}>
           <DrawerHeader />
-          {isGeneralChat ? (
-            <ChatContainer user={user} isGeneral={true} />
+          {viewMode ? (
+            <GeneralChatContainer user={user} isGeneral={true} />
+          ) : !openGeneralPipelineChatPage && currentMessages && showChat ? (
+            <ConversationView
+              messages={currentMessages}
+              user={user}
+              onSendMessage={handleSendMessage}
+            />
           ) : (
             <PipelineContainer
               user={user}
@@ -625,7 +758,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
 
       {openDeleteModal && pipelineToDelete ? (
         <Dialog
-          open={openDeleteModal} // Changed from open={open}
+          open={openDeleteModal}
           onClose={() => setOpenDeleteModal(false)}
           fullWidth
           maxWidth="sm"

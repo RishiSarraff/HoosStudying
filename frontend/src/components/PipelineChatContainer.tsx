@@ -1,9 +1,10 @@
 import { Box, Typography } from "@mui/material";
-import type { ChatContainerComponents } from "../types/index";
+import type { PipelineChatContainerComponents } from "../types/index";
 import ChatBox from "./ChatBox";
 import ConversationContainer from "./ConversationContainer";
 
-const ChatContainer: React.FC<ChatContainerComponents> = ({ user }) => {
+const PipelineChatContainer: React.FC<PipelineChatContainerComponents> = ({ user, pipeline }) => {
+  console.log(user)
   return (
     <Box
       sx={{
@@ -12,7 +13,7 @@ const ChatContainer: React.FC<ChatContainerComponents> = ({ user }) => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#CACACA", 
+        backgroundColor: "#E0F3FF", 
         padding: 4,
         margin: 0,
       }}
@@ -21,7 +22,7 @@ const ChatContainer: React.FC<ChatContainerComponents> = ({ user }) => {
         variant="h2"
         sx={{ mb: 4, fontWeight: 700, color: "#212121" }}
       >
-        Welcome, {user.first_name}!
+        {`Start a New Conversation!`}
       </Typography>
       <ConversationContainer />
 
@@ -32,4 +33,4 @@ const ChatContainer: React.FC<ChatContainerComponents> = ({ user }) => {
   );
 };
 
-export default ChatContainer;
+export default PipelineChatContainer;

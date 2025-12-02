@@ -40,6 +40,11 @@ export interface ChatContainerComponents {
     pipeline?: MySQLPipeline;
 }
 
+export interface PipelineChatContainerComponents{
+    user: MySQLUser;
+    pipeline?: MySQLPipeline;
+}
+
 export interface MainScreenInputs {
     user: MySQLUser;
     pipeline: MySQLPipeline;
@@ -126,4 +131,39 @@ export interface DocumentMetadata {
     checksum: string
     mime_type: string
     created_at: Date
+}
+
+export interface MySQLConversation{
+    conversation_id: number
+    user_id: number
+    pipeline_id: number
+    created_at: Date
+    last_message_at: Date
+    first_message_content?: string
+}
+
+export interface MySQLMessage{
+    message_id: number
+    conversation_id: number
+    sender_type: string
+    message_text: string
+    timestamp: Date
+}
+
+export interface ConversationCardProps{
+    conversation: MySQLConversation
+    index: number
+    onDelete: () => void;
+    isActive: boolean
+}
+
+export interface ConversationViewProps {
+  messages: MySQLMessage[];
+  user: MySQLUser;
+  onSendMessage: (messageText: string) => void;
+}
+
+export interface MessageBoxProps {
+  message: MySQLMessage;
+  userName?: string;
 }

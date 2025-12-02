@@ -150,7 +150,7 @@ const PipelineFilesContainer: React.FC<PipelineFilesContainerProps> = ({
     <Box
       sx={{
         minHeight: "100vh",
-        backgroundColor: "#CACACA",
+        backgroundColor: "#E0F3FF",
         padding: 4,
       }}
     >

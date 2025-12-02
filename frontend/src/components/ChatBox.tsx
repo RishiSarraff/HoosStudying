@@ -82,7 +82,7 @@ export default function ChatBox() {
             },
           }}
         >
-          Send
+          {"Send"}
         </Button>
       </Box>
     </Box>

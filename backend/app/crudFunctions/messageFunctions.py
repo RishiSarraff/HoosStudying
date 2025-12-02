@@ -146,6 +146,24 @@ def get_last_message_in_conversation(db: Session, conversation_id: int) -> Optio
 
     return result.mappings().first()
 
+def get_first_message_in_conversation(db: Session, conversation_id: int) -> Optional[Dict[str, Any]]:
+    result = db.execute(
+        text(
+            """
+                SELECT * 
+                FROM Message
+                WHERE conversation_id = :conversation_id
+                ORDER BY timestamp ASC
+                LIMIT 1;
+            """
+        ),
+        {
+            'conversation_id': conversation_id
+        }
+    )
+
+    return result.mappings().first()
+
 ## DELETE MESSAGE
 
 def delete_message(db: Session, message_id: int) -> bool:

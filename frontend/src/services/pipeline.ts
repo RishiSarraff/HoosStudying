@@ -1,4 +1,4 @@
-import type { MySQLPipeline } from "../types"
+import type { MySQLConversation, MySQLPipeline } from "../types"
 import axios from "axios";
 
 export async function getDefaultUserPipeline(token: string): Promise<MySQLPipeline>{

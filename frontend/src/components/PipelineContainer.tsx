@@ -1,5 +1,5 @@
 import type { PipelineContainerProps } from "../types";
-import ChatContainer from "./ChatContainer";
+import PipelineChatContainer from "./PipelineChatContainer";
 import { Box } from "@mui/material";
 import PipelineFilesContainer from "./PipelineFilesContainer";
 
@@ -13,7 +13,7 @@ const PipelineContainer: React.FC<PipelineContainerProps> = ({
   return (
     <Box>
       {showChat ? (
-        <ChatContainer user={user} isGeneral={false} pipeline={pipeline} />
+        <PipelineChatContainer user={user} pipeline={pipeline} />
       ) : (
         <PipelineFilesContainer
           key={refreshKey}
