@@ -140,6 +140,24 @@ def remove_tag_from_pipeline(db, pipeline_id, tag_id) -> bool:
         db.rollback()
         raise e
     
+def remove_system_tag_from_pipeline(db, pipeline_id) -> bool: 
+    try:
+        result = db.execute(
+            text("""
+                DELETE pt FROM Pipeline_Tag pt
+                JOIN Tag t ON pt.tag_id = t.tag_id
+                WHERE pt.pipeline_id = :pipeline_id AND t.tag_type = 'system'
+            """),
+            {'pipeline_id': pipeline_id}
+        )
+
+        db.commit()
+        return result.rowcount > 0
+
+    except Exception as e:
+        db.rollback()
+        raise e
+    
 def remove_all_tags_from_pipeline(db, pipeline_id) -> int:
     try:
         result = db.execute(

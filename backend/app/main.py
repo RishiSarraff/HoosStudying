@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import upload, auth, pipelines, documents, conversations
+from app.routers import upload, auth, pipelines, documents, conversations, tags
 
 app = FastAPI()
 
@@ -17,6 +17,7 @@ app.include_router(upload.router, prefix="/api", tags=["upload"])
 app.include_router(pipelines.router, prefix="/api/pipeline", tags="pipeline")
 app.include_router(documents.router, prefix="/api/document", tags="document")
 app.include_router(conversations.router, prefix="/api/conversation", tags="conversation")
+app.include_router(tags.router,prefix="/api/tag", tags=["tag"] )
 
 @app.get("/")
 async def root():

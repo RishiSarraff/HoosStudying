@@ -54,6 +54,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import CustomAlert from "./CustomAlert";
 import FilesButton from "./FilesButton";
@@ -65,6 +68,7 @@ import EditSquareIcon from "@mui/icons-material/EditSquare";
 import ConversationCard from "./ConversationCard";
 import ConversationView from "./ConversationView";
 import HomeIcon from "@mui/icons-material/Home";
+import PipelineTag from "./PipelineTag";
 
 const drawerWidth = 360;
 
@@ -163,12 +167,22 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     useState<boolean>(false);
   const [openDeleteModal, setOpenDeleteModal] = useState<boolean>(false);
   const [pipelineToDelete, setPipelineToDelete] = useState<MySQLPipeline>();
-  const [listOfPipelines, setListOfPipelines] =
-    useState<MySQLPipeline[]>(initialPipelines);
+  const [listOfPipelines, setListOfPipelines] = useState<MySQLPipeline[]>(
+    initialPipelines.map((p) => ({
+      ...p,
+      pipeline_tags: p.pipeline_tags || [],
+    }))
+  );
 
   React.useEffect(() => {
-    setListOfPipelines(initialPipelines);
+    setListOfPipelines(
+      initialPipelines.map((p) => ({
+        ...p,
+        pipeline_tags: p.pipeline_tags || [],
+      }))
+    );
   }, [initialPipelines]);
+
   const [alertState, setAlertState] = useState({
     open: false,
     message: "",
@@ -209,7 +223,11 @@ const MainScreen: React.FC<MainScreenInputs> = ({
       const token = await getCurrentToken();
       if (token) {
         const updatedPipelines = await getAllNonDefaultPipelines(token);
-        setListOfPipelines(updatedPipelines);
+        const pipelinesWithTags = updatedPipelines.map((p) => ({
+          ...p,
+          pipeline_tags: p.pipeline_tags || [],
+        }));
+        setListOfPipelines(pipelinesWithTags);
       }
     } catch (error) {
       console.error("Error refreshing pipelines:", error);
@@ -219,6 +237,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   const handleNewPipelineSubmit = async (data: {
     pipelineName: string;
     pipelineDescription: string;
+    system_tag_id: number;
     user_id: number;
   }) => {
     try {
@@ -229,7 +248,8 @@ const MainScreen: React.FC<MainScreenInputs> = ({
           const response = await createNewPipeline(
             token,
             data.pipelineName,
-            data.pipelineDescription
+            data.pipelineDescription,
+            data.system_tag_id
           );
           if (response) {
             setListOfPipelines((prev) => [...prev, response]);
@@ -292,6 +312,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     pipelineName: string;
     pipelineDescription: string;
     user_id: number;
+    system_tag_id: number;
   }) => {
     try {
       if (data.pipelineDescription && data.pipelineName) {
@@ -301,7 +322,8 @@ const MainScreen: React.FC<MainScreenInputs> = ({
             token,
             currentPipeline.pipeline_id,
             data.pipelineName,
-            data.pipelineDescription
+            data.pipelineDescription,
+            data.system_tag_id
           );
           if (response) {
             setListOfPipelines((prev) =>
@@ -582,36 +604,132 @@ const MainScreen: React.FC<MainScreenInputs> = ({
             )}
           </List>
           {open && (
-            <Typography
-              variant="subtitle2"
-              sx={{
-                px: 2,
-                pt: 2,
-                pb: 1,
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                fontSize: "1.2rem",
-              }}
-            >
-              {viewMode ? "Pipelines" : "Conversations"}
-              {viewMode ? (
-                <IconButton
-                  aria-label="Create a new pipeline"
-                  onClick={() => setOpenNewPipelineModal(true)}
+            <Box sx={{ px: 2, pb: 1 }}>
+              {!viewMode &&
+                currentPipeline &&
+                currentPipeline.pipeline_tags &&
+                currentPipeline.pipeline_tags.length > 0 && (
+                  <Box
+                    sx={{
+                      mb: 2,
+                      maxHeight: "120px",
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      pb: 1,
+                      borderBottom: "1px solid #E0E0E0",
+                      "&::-webkit-scrollbar": {
+                        width: "6px",
+                      },
+                      "&::-webkit-scrollbar-track": {
+                        background: "#f1f1f1",
+                        borderRadius: "3px",
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        background: "#888",
+                        borderRadius: "3px",
+                      },
+                      "&::-webkit-scrollbar-thumb:hover": {
+                        background: "#555",
+                      },
+                    }}
+                  >
+                    {/* System Tags */}
+                    {currentPipeline.pipeline_tags.filter(
+                      (t) => t.tag_type === "system"
+                    ).length > 0 && (
+                      <Box sx={{ mb: 1 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "0.85rem",
+                            mb: 0.5,
+                            color: "#757575",
+                          }}
+                        >
+                          {"Category"}
+                        </Typography>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                          {currentPipeline.pipeline_tags
+                            .filter((t) => t.tag_type === "system")
+                            .map((pipeline_tag, index) => (
+                              <PipelineTag
+                                key={pipeline_tag.tag_id}
+                                pipeline_tag={pipeline_tag}
+                                index={index}
+                              />
+                            ))}
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* Custom Tags */}
+                    {currentPipeline.pipeline_tags.filter(
+                      (t) => t.tag_type === "custom"
+                    ).length > 0 && (
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "0.85rem",
+                            mb: 0.5,
+                            color: "#757575",
+                          }}
+                        >
+                          {"Tags"}
+                        </Typography>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                          {currentPipeline.pipeline_tags
+                            .filter((t) => t.tag_type === "custom")
+                            .map((pipeline_tag, index) => (
+                              <PipelineTag
+                                key={pipeline_tag.tag_id}
+                                pipeline_tag={pipeline_tag}
+                                index={index}
+                              />
+                            ))}
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "1.2rem",
+                  }}
                 >
-                  <AddIcon />
-                </IconButton>
-              ) : (
-                <IconButton
-                  aria-label="Go back to new conversation page"
-                  onClick={() => setOpenGeneralPipelineChatPage(true)}
-                >
-                  <HomeIcon />
-                </IconButton>
-              )}
-            </Typography>
+                  {viewMode ? "Pipelines" : "Conversations"}
+                </Typography>
+
+                {viewMode ? (
+                  <IconButton
+                    aria-label="Create a new pipeline"
+                    onClick={() => setOpenNewPipelineModal(true)}
+                  >
+                    <AddIcon />
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    aria-label="Go back to new conversation page"
+                    onClick={() => setOpenGeneralPipelineChatPage(true)}
+                  >
+                    <HomeIcon />
+                  </IconButton>
+                )}
+              </Box>
+            </Box>
           )}
           <List>
             {viewMode
@@ -639,10 +757,10 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                         }}
                       >
                         <PipelineCard
-                          pipeline_id={p.pipeline_id}
                           pipeline_name={p.pipeline_name}
                           pipeline_description={p.description}
                           number_of_documents={p.number_of_documents}
+                          pipeline_tags={p.pipeline_tags}
                           index={index}
                           onDelete={() => {
                             setOpenDeleteModal(true);

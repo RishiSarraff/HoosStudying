@@ -42,7 +42,7 @@ async def getConversations(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        pipeline = pipelineFunctions.get_pipeline_by_id(db, pipeline_id)
+        pipeline = pipelineFunctions.get_pipeline_by_id(db, pipeline_id, False)
         if not pipeline:
             raise HTTPException(status_code=404, detail="Pipeline not found")
         

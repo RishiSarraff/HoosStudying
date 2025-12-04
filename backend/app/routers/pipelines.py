@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.services.firebase_auth import verify_firebase_token
-from app.crudFunctions import userFunctions, pipelineFunctions, pipelineDocumentFunctions
+from app.crudFunctions import userFunctions, pipelineFunctions, pipelineDocumentFunctions, tagFunctions, pipelineTagFunctions
 from app.database import get_db
 from sqlalchemy import text
 
@@ -21,6 +21,14 @@ class UserResponse(BaseModel):
     last_name: str
     email: str
 
+class TagResponse(BaseModel):
+    tag_id: int
+    user_id: Optional[int]
+    name: str
+    color: str
+    tag_type: str
+    created_at: datetime
+
 class PipelineResponse(BaseModel):
     pipeline_id: int
     user_id: int
@@ -28,15 +36,18 @@ class PipelineResponse(BaseModel):
     description: str
     created_at: datetime
     number_of_documents: Optional[int]
+    pipeline_tags: List[TagResponse] = []
 
 class CreatePipelineRequest(BaseModel):
     pipeline_name: str
     pipeline_description: str
+    system_tag_id: int
 
 class EditPipelineRequest(BaseModel):
     pipeline_id: int
     pipeline_name: str
     pipeline_description: str
+    system_tag_id: Optional[int] = None
 
 class DeletePipelineRequest(BaseModel):
     pipeline_id: int
@@ -85,9 +96,16 @@ async def getDefaultPipeline(
                 detail=f"General Pipeline information not found and could not be retrieved"
             )
         
+        general_pipeline = pipelineFunctions.get_pipeline_by_id(
+            db,
+            pipeline_id=general_pipeline_id,
+            include_tags=False
+        )
+        
         document_count = pipelineDocumentFunctions.get_count_of_documents_by_pipeline(db, general_pipeline_id)
         pipeline_dict = dict(general_pipeline)
         pipeline_dict["number_of_documents"] = document_count
+        pipeline_dict["pipeline_tags"] = []
 
         return pipeline_dict
 
@@ -122,7 +140,7 @@ async def getNonDefaultPipelines(
             db,
             user_id
         )
-        
+
         if not list_of_non_general_pipelines:
             return []
         
@@ -162,6 +180,13 @@ async def createNewPipeline(
 
         user_id = user["user_id"]
 
+        tag = tagFunctions.get_tag_by_id(db, request.system_tag_id)
+        if not tag or tag['tag_type'] != 'system':
+            raise HTTPException(
+                status_code=400, 
+                detail="Invalid system tag. Must select Work, Personal, School, or Other."
+            )
+
         created_pipeline = pipelineFunctions.create_pipeline(
             db,
             user_id,
@@ -175,12 +200,33 @@ async def createNewPipeline(
                 detail=f"Non General Pipelines for user {user_id} not found"
             )
         
+        pipeline_id = created_pipeline["pipeline_id"]
+
+        try:
+
+            pipelineTagFunctions.add_tag_to_pipeline(
+                db=db,
+                pipeline_id=pipeline_id,
+                tag_id=request.system_tag_id
+            )
+        except Exception as tag_error:
+            print(f"Failed to add system tag, rolling back pipeline creation: {tag_error}")
+            pipelineFunctions.delete_pipeline_with_procedure(db, pipeline_id)
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to assign category tag to pipeline"
+            )
+        
         pipeline_dict = dict(created_pipeline)
         document_count = pipelineDocumentFunctions.get_count_of_documents_by_pipeline(
             db, 
             pipeline_dict["pipeline_id"]
         )
         pipeline_dict["number_of_documents"] = document_count
+
+        tags = pipelineTagFunctions.get_tags_for_pipeline(db, pipeline_id)
+
+        pipeline_dict["pipeline_tags"] = [dict(tag) for tag in tags]
         
         return pipeline_dict
 
@@ -347,7 +393,30 @@ async def editPipeline(
                 detail=f"Non General Pipelines not found"
             )
         
-        pipeline_dict = dict(edited_pipeline)
+        if request.system_tag_id:
+            try:
+                pipelineTagFunctions.remove_system_tag_from_pipeline(
+                    db=db,
+                    pipeline_id=edited_pipeline["pipeline_id"],
+                )
+                db.commit()
+
+            except Exception as e:
+                print("Error in removing old system tag: {e}")
+
+            pipelineTagFunctions.add_tag_to_pipeline(
+                db=db,
+                pipeline_id=request.pipeline_id,
+                tag_id=request.system_tag_id
+            )
+
+        final_pipeline = pipelineFunctions.get_pipeline_by_id(
+            db, 
+            request.pipeline_id, 
+            include_tags=True
+        )
+        
+        pipeline_dict = dict(final_pipeline)
         document_count = pipelineDocumentFunctions.get_count_of_documents_by_pipeline(
             db, 
             pipeline_dict["pipeline_id"]
