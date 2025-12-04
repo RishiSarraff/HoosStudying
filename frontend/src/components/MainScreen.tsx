@@ -27,10 +27,23 @@ import PersonIcon from "@mui/icons-material/Person";
 import ChatBubbleIcon from "@mui/icons-material/ChatBubble";
 import AddIcon from "@mui/icons-material/Add";
 import GeneralChatContainer from "./GeneralChatContainer";
-import { type MySQLPipeline, type MainScreenInputs, type MySQLConversation, type MySQLMessage } from "../types/index";
+import {
+  type MySQLPipeline,
+  type MainScreenInputs,
+  type MySQLConversation,
+  type MySQLMessage,
+} from "../types/index";
 import NewPipelineModal from "./NewPipelineModal";
-import { createNewPipeline, deletePipeline, getAllNonDefaultPipelines, editPipeline } from "../services/pipeline";
-import { getConversations, getMessagesForConversation } from "../services/conversation"
+import {
+  createNewPipeline,
+  deletePipeline,
+  getAllNonDefaultPipelines,
+  editPipeline,
+} from "../services/pipeline";
+import {
+  getConversations,
+  getMessagesForConversation,
+} from "../services/conversation";
 import { getCurrentToken, logout } from "../services/auth";
 import PipelineCard from "./PipelineCard";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -48,11 +61,10 @@ import ChatButton from "./ChatButton";
 import FilesSearchBar from "./FilesSearchBar";
 import UploadFilesButton from "./UploadFilesButton";
 import PipelineContainer from "./PipelineContainer";
-import EditSquareIcon from '@mui/icons-material/EditSquare';
+import EditSquareIcon from "@mui/icons-material/EditSquare";
 import ConversationCard from "./ConversationCard";
 import ConversationView from "./ConversationView";
-import HomeIcon from '@mui/icons-material/Home';
-
+import HomeIcon from "@mui/icons-material/Home";
 
 const drawerWidth = 360;
 
@@ -153,6 +165,10 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   const [pipelineToDelete, setPipelineToDelete] = useState<MySQLPipeline>();
   const [listOfPipelines, setListOfPipelines] =
     useState<MySQLPipeline[]>(initialPipelines);
+
+  React.useEffect(() => {
+    setListOfPipelines(initialPipelines);
+  }, [initialPipelines]);
   const [alertState, setAlertState] = useState({
     open: false,
     message: "",
@@ -162,11 +178,16 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     useState<MySQLPipeline>(pipeline);
   const [showChat, setShowChat] = useState(true);
   const [refreshDocuments, setRefreshDocuments] = useState<number>(0);
-  const [openEditPipelineModal, setOpenEditPipelineModal] = useState<boolean>(false);
-  const [listOfConversations, setListOfConversations] = useState<MySQLConversation[]>([]);
-  const [currentConversation, setCurrentConversation] = useState<MySQLConversation>();
+  const [openEditPipelineModal, setOpenEditPipelineModal] =
+    useState<boolean>(false);
+  const [listOfConversations, setListOfConversations] = useState<
+    MySQLConversation[]
+  >([]);
+  const [currentConversation, setCurrentConversation] =
+    useState<MySQLConversation>();
   const [currentMessages, setCurrentMessages] = useState<MySQLMessage[]>();
-  const [openGeneralPipelineChatPage, setOpenGeneralPipelineChatPage] = useState<boolean>(false);
+  const [openGeneralPipelineChatPage, setOpenGeneralPipelineChatPage] =
+    useState<boolean>(false);
 
   const showAlert = (
     message: string,
@@ -264,10 +285,14 @@ const MainScreen: React.FC<MainScreenInputs> = ({
 
   const handleDocumentUploadSuccess = () => {
     setRefreshDocuments((prev) => prev + 1);
-    refreshPipelines()
+    refreshPipelines();
   };
 
-  const handleEditPipeline = async(data: { pipelineName: string; pipelineDescription: string; user_id: number; }) => {
+  const handleEditPipeline = async (data: {
+    pipelineName: string;
+    pipelineDescription: string;
+    user_id: number;
+  }) => {
     try {
       if (data.pipelineDescription && data.pipelineName) {
         const token = await getCurrentToken();
@@ -279,8 +304,8 @@ const MainScreen: React.FC<MainScreenInputs> = ({
             data.pipelineDescription
           );
           if (response) {
-            setListOfPipelines((prev) => 
-              prev.map(p => 
+            setListOfPipelines((prev) =>
+              prev.map((p) =>
                 p.pipeline_id === response.pipeline_id ? response : p
               )
             );
@@ -295,48 +320,48 @@ const MainScreen: React.FC<MainScreenInputs> = ({
       console.log(e);
       showAlert("Error Editing Pipeline", "error");
     }
-  }
+  };
 
-  const retrievePipelineConversations = async(p: MySQLPipeline) => {
-    try{
-      const token = await getCurrentToken()
-      if(token){
-        const response = await getConversations(
-          token,
-          p.pipeline_id
-        )
+  const retrievePipelineConversations = async (p: MySQLPipeline) => {
+    try {
+      const token = await getCurrentToken();
+      if (token) {
+        const response = await getConversations(token, p.pipeline_id);
         if (response) {
           setListOfConversations(response);
         }
       }
-    }catch (e) {
+    } catch (e) {
       console.log(e);
-      showAlert("Error Retrieving Conversations for user and pipeline", "error");
+      showAlert(
+        "Error Retrieving Conversations for user and pipeline",
+        "error"
+      );
     }
-  }
+  };
 
-  const retrieveMessagesFromConvo = async(conversation_id: number) => {
-    try{
-      const token = await getCurrentToken()
-      if(token){
+  const retrieveMessagesFromConvo = async (conversation_id: number) => {
+    try {
+      const token = await getCurrentToken();
+      if (token) {
         const response = await getMessagesForConversation(
           token,
           conversation_id
-        )
+        );
         if (response) {
           setCurrentMessages(response);
-          console.log(response)
+          console.log(response);
         }
       }
-    }catch(e){
-      console.log(e)
+    } catch (e) {
+      console.log(e);
       showAlert("Error Retrieving Messages from older conversation", "error");
     }
-  }
+  };
 
-  const conversationDeletionHandler = async() => {
-    throw "Function not implemented yet"
-  }
+  const conversationDeletionHandler = async () => {
+    throw "Function not implemented yet";
+  };
 
   const handleSendMessage = async (messageText: string) => {
     if (!currentConversation) return;
@@ -377,21 +402,21 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               <Typography variant="h6" noWrap component="div">
                 {viewMode ? "General Chat" : currentPipeline.pipeline_name}
               </Typography>
-                {!viewMode ? 
-                  (<IconButton
-                    color="inherit"
-                    aria-label="open drawer"
-                    onClick={() => setOpenEditPipelineModal(true)}
-                    edge="start"
-                    sx={[
-                      {
-                        marginRight: 2,
-                      },
-                    ]}
-                  >
-                    <EditSquareIcon /> 
-                  </IconButton>)
-                : null}
+              {!viewMode ? (
+                <IconButton
+                  color="inherit"
+                  aria-label="open drawer"
+                  onClick={() => setOpenEditPipelineModal(true)}
+                  edge="start"
+                  sx={[
+                    {
+                      marginRight: 2,
+                    },
+                  ]}
+                >
+                  <EditSquareIcon />
+                </IconButton>
+              ) : null}
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -485,68 +510,74 @@ const MainScreen: React.FC<MainScreenInputs> = ({
 
           <Divider />
           <List>
-            <ListItem disablePadding sx={{
-                  minHeight: 48,
-                  px: 2.5,
-                  justifyContent: open ? "initial" : "center",
-                }}>
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    justifyContent: "center",
-                    mr: open ? 3 : "auto",
-                  }}
-                >
-                  <PersonIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={`${user.first_name} ${user.last_name}`}
-                  secondary={user.email}
-                  sx={{
-                    opacity: open ? 1 : 0,
-                    "& .MuiListItemText-secondary": {
-                      fontSize: "0.8rem",
-                      color: "text.secondary",
-                    },
-                  }}
-                />
-                {open && (
-                  <IconButton onClick={() => goToSettingsHandler()}>
-                    <SettingsIcon />
-                  </IconButton>
-                )}
+            <ListItem
+              disablePadding
+              sx={{
+                minHeight: 48,
+                px: 2.5,
+                justifyContent: open ? "initial" : "center",
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  justifyContent: "center",
+                  mr: open ? 3 : "auto",
+                }}
+              >
+                <PersonIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={`${user.first_name} ${user.last_name}`}
+                secondary={user.email}
+                sx={{
+                  opacity: open ? 1 : 0,
+                  "& .MuiListItemText-secondary": {
+                    fontSize: "0.8rem",
+                    color: "text.secondary",
+                  },
+                }}
+              />
+              {open && (
+                <IconButton onClick={() => goToSettingsHandler()}>
+                  <SettingsIcon />
+                </IconButton>
+              )}
             </ListItem>
-            <Divider sx={{mt:1, mb:1}}/>
+            <Divider sx={{ mt: 1, mb: 1 }} />
 
             {!viewMode && (
               <div>
-              <ListItem disablePadding sx={{ display: "block"}}>
-                <ListItemButton
-                  sx={{
-                    minHeight: 48,
-                    px: 2.5,
-                    justifyContent: open ? "initial" : "center",
-                  }}
-                  onClick={() => {
-                    setViewMode(true);
-                  }}
-                >
-                  <ListItemIcon
+                <ListItem disablePadding sx={{ display: "block" }}>
+                  <ListItemButton
                     sx={{
-                      minWidth: 0,
-                      justifyContent: "center",
-                      mr: open ? 3 : "auto",
+                      minHeight: 48,
+                      px: 2.5,
+                      justifyContent: open ? "initial" : "center",
+                    }}
+                    onClick={() => {
+                      setViewMode(true);
+                      setListOfConversations([]);
+                      setCurrentConversation(undefined);
+                      setCurrentMessages(undefined);
                     }}
                   >
-                    <ChatBubbleIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="General Chat"
-                    sx={{ opacity: open ? 1 : 0 }}
-                  />
-                </ListItemButton>
-              </ListItem>
-              <Divider sx={{mt:1, mb:1}}/>
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        justifyContent: "center",
+                        mr: open ? 3 : "auto",
+                      }}
+                    >
+                      <ChatBubbleIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="General Chat"
+                      sx={{ opacity: open ? 1 : 0 }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <Divider sx={{ mt: 1, mb: 1 }} />
               </div>
             )}
           </List>
@@ -565,153 +596,167 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               }}
             >
               {viewMode ? "Pipelines" : "Conversations"}
-              {viewMode ? 
-                (<IconButton
+              {viewMode ? (
+                <IconButton
                   aria-label="Create a new pipeline"
                   onClick={() => setOpenNewPipelineModal(true)}
                 >
                   <AddIcon />
-                </IconButton>) : 
-                (<IconButton
+                </IconButton>
+              ) : (
+                <IconButton
                   aria-label="Go back to new conversation page"
                   onClick={() => setOpenGeneralPipelineChatPage(true)}
                 >
                   <HomeIcon />
                 </IconButton>
-                )
-              }
+              )}
             </Typography>
           )}
           <List>
-            {viewMode ? listOfPipelines.map((p, index) => (
-              <ListItem
-                key={p.pipeline_id}
-                disablePadding
-                sx={{ display: "block" }}
-              >
-                {open ? (
-                  <ListItemButton
-                    sx={{
-                      minHeight: 48,
-                      px: 2.5,
-                      justifyContent: open ? "initial" : "center",
-                    }}
-                    onClick={() => {
-                      retrievePipelineConversations(p);
-                      setViewMode(false);
-                      setCurrentPipeline(p);
-                    }}
+            {viewMode
+              ? listOfPipelines.map((p, index) => (
+                  <ListItem
+                    key={p.pipeline_id}
+                    disablePadding
+                    sx={{ display: "block" }}
                   >
-                    <PipelineCard
-                      pipeline_id={p.pipeline_id}
-                      pipeline_name={p.pipeline_name}
-                      pipeline_description={p.description}
-                      number_of_documents={p.number_of_documents}
-                      index={index}
-                      onDelete={() => {
-                        setOpenDeleteModal(true);
-                        setPipelineToDelete(p);
-                      }}
-                    />
-                  </ListItemButton>
-                ) : (
-                  <ListItemButton
-                    sx={{
-                      minHeight: 48,
-                      justifyContent: "center",
-                    }}
-                  >
-                    {" "}
-                    <ListItemIcon
-                      sx={{ minWidth: 0, justifyContent: "center" }}
-                    >
-                      <Box
+                    {open ? (
+                      <ListItemButton
                         sx={{
-                          position: "relative",
-                          display: "flex",
-                          alignItems: "center",
+                          minHeight: 48,
+                          px: 2.5,
+                          justifyContent: open ? "initial" : "center",
+                        }}
+                        onClick={() => {
+                          setListOfConversations([]);
+                          setCurrentConversation(undefined);
+                          setCurrentMessages(undefined);
+                          setOpenGeneralPipelineChatPage(true);
+                          retrievePipelineConversations(p);
+                          setViewMode(false);
+                          setCurrentPipeline(p);
+                        }}
+                      >
+                        <PipelineCard
+                          pipeline_id={p.pipeline_id}
+                          pipeline_name={p.pipeline_name}
+                          pipeline_description={p.description}
+                          number_of_documents={p.number_of_documents}
+                          index={index}
+                          onDelete={() => {
+                            setOpenDeleteModal(true);
+                            setPipelineToDelete(p);
+                          }}
+                        />
+                      </ListItemButton>
+                    ) : (
+                      <ListItemButton
+                        sx={{
+                          minHeight: 48,
                           justifyContent: "center",
                         }}
                       >
-                        <FolderIcon sx={{ fontSize: 28, color: "#424242" }} />
-                        <Typography
-                          sx={{
-                            position: "absolute",
-                            fontSize: "0.7rem",
-                            fontWeight: 600,
-                            color: "#FFFFFF",
-                          }}
+                        {" "}
+                        <ListItemIcon
+                          sx={{ minWidth: 0, justifyContent: "center" }}
                         >
-                          {index + 1}
-                        </Typography>
-                      </Box>
-                    </ListItemIcon>
-                  </ListItemButton>
-                )}
-              </ListItem>
-            )): listOfConversations.map((convo, index) => (
-              <ListItem
-                key={convo.conversation_id}
-                disablePadding
-                sx={{ display: "block" }}
-              >
-                {open ? (
-                  <ListItemButton
-                    sx={{
-                      minHeight: 48,
-                      px: 2.5,
-                      justifyContent: open ? "initial" : "center",
-                    }}
-                    onClick={() => {
-                      setViewMode(false);
-                      setOpenGeneralPipelineChatPage(false)
-                      setCurrentConversation(convo);
-                      retrieveMessagesFromConvo(convo.conversation_id);
-                    }}
+                          <Box
+                            sx={{
+                              position: "relative",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <FolderIcon
+                              sx={{ fontSize: 28, color: "#424242" }}
+                            />
+                            <Typography
+                              sx={{
+                                position: "absolute",
+                                fontSize: "0.7rem",
+                                fontWeight: 600,
+                                color: "#FFFFFF",
+                              }}
+                            >
+                              {index + 1}
+                            </Typography>
+                          </Box>
+                        </ListItemIcon>
+                      </ListItemButton>
+                    )}
+                  </ListItem>
+                ))
+              : listOfConversations.map((convo, index) => (
+                  <ListItem
+                    key={convo.conversation_id}
+                    disablePadding
+                    sx={{ display: "block" }}
                   >
-                    <ConversationCard
-                      conversation={convo}
-                      index={index}
-                      onDelete={conversationDeletionHandler}
-                      isActive={convo.conversation_id == currentConversation?.conversation_id && !openGeneralPipelineChatPage}
-                    />
-                  </ListItemButton>
-                ) : (
-                  <ListItemButton
-                    sx={{
-                      minHeight: 48,
-                      justifyContent: "center",
-                    }}
-                  >
-                    {" "}
-                    <ListItemIcon
-                      sx={{ minWidth: 0, justifyContent: "center" }}
-                    >
-                      <Box
+                    {open ? (
+                      <ListItemButton
                         sx={{
-                          position: "relative",
-                          display: "flex",
-                          alignItems: "center",
+                          minHeight: 48,
+                          px: 2.5,
+                          justifyContent: open ? "initial" : "center",
+                        }}
+                        onClick={() => {
+                          setViewMode(false);
+                          setOpenGeneralPipelineChatPage(false);
+                          setCurrentConversation(convo);
+                          retrieveMessagesFromConvo(convo.conversation_id);
+                        }}
+                      >
+                        <ConversationCard
+                          conversation={convo}
+                          index={index}
+                          onDelete={conversationDeletionHandler}
+                          isActive={
+                            convo.conversation_id ==
+                              currentConversation?.conversation_id &&
+                            !openGeneralPipelineChatPage
+                          }
+                        />
+                      </ListItemButton>
+                    ) : (
+                      <ListItemButton
+                        sx={{
+                          minHeight: 48,
                           justifyContent: "center",
                         }}
                       >
-                        <FolderIcon sx={{ fontSize: 28, color: "#424242" }} />
-                        <Typography
-                          sx={{
-                            position: "absolute",
-                            fontSize: "0.7rem",
-                            fontWeight: 600,
-                            color: "#FFFFFF",
-                          }}
+                        {" "}
+                        <ListItemIcon
+                          sx={{ minWidth: 0, justifyContent: "center" }}
                         >
-                          {index + 1}
-                        </Typography>
-                      </Box>
-                    </ListItemIcon>
-                  </ListItemButton>
-                )}
-              </ListItem>
-            ))}
+                          <Box
+                            sx={{
+                              position: "relative",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <FolderIcon
+                              sx={{ fontSize: 28, color: "#424242" }}
+                            />
+                            <Typography
+                              sx={{
+                                position: "absolute",
+                                fontSize: "0.7rem",
+                                fontWeight: 600,
+                                color: "#FFFFFF",
+                              }}
+                            >
+                              {index + 1}
+                            </Typography>
+                          </Box>
+                        </ListItemIcon>
+                      </ListItemButton>
+                    )}
+                  </ListItem>
+                ))}
           </List>
         </Drawer>
         <Box component="main" sx={{ flexGrow: 1 }}>
@@ -768,7 +813,9 @@ const MainScreen: React.FC<MainScreenInputs> = ({
           </DialogTitle>
           <DialogContent>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              {"Are you sure you want to delete this pipeline? This action cannot be undone."}
+              {
+                "Are you sure you want to delete this pipeline? This action cannot be undone."
+              }
             </Typography>
             <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
               {`Description: ${pipelineToDelete.description}`}
@@ -784,7 +831,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               color="error"
               onClick={() =>
                 deletePipelineHandler({
-                  pipeline_id: pipelineToDelete.pipeline_id
+                  pipeline_id: pipelineToDelete.pipeline_id,
                 })
               }
             >
@@ -807,7 +854,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
           pipeline={currentPipeline}
         />
       ) : null}
-
     </div>
   );
 };

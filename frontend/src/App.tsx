@@ -68,6 +68,8 @@ const App: React.FC = () => {
       () => {
         clearTimeout(timeoutId);
         setUser(null);
+        setPipeline(null);
+        setListOfPipelines([]);
         setLoading(false);
       }
     );
@@ -122,6 +124,7 @@ const App: React.FC = () => {
         {user && pipeline ? (
           <div>
             <MainScreen
+              key={user.user_id}
               user={user}
               pipeline={pipeline}
               listOfPipelines={listOfPipelines}
