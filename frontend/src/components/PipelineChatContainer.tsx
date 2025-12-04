@@ -1,10 +1,47 @@
+import React from "react";
 import { Box, Typography } from "@mui/material";
-import type { PipelineChatContainerComponents } from "../types/index";
+import type {
+  PipelineChatContainerComponents,
+  MySQLMessage,
+} from "../types/index";
 import ChatBox from "./ChatBox";
 import ConversationContainer from "./ConversationContainer";
+import MessageBox from "./MessageBox";
+import type { ChatResponse } from "../services/chat";
 
-const PipelineChatContainer: React.FC<PipelineChatContainerComponents> = ({ user, pipeline }) => {
-  console.log(user)
+const PipelineChatContainer: React.FC<PipelineChatContainerComponents> = ({
+  user,
+  pipeline,
+}) => {
+  const [messages, setMessages] = React.useState<MySQLMessage[]>([]);
+  const [conversationId, setConversationId] = React.useState<
+    number | undefined
+  >();
+
+  const handleMessageSent = (response: ChatResponse) => {
+    if (!conversationId) {
+      setConversationId(response.conversation_id);
+    }
+
+    const userMessage: MySQLMessage = {
+      message_id: Date.now(),
+      conversation_id: response.conversation_id,
+      sender_type: "USER",
+      message_text: messages.length > 0 ? "" : response.response,
+      timestamp: new Date(),
+    };
+
+    const botMessage: MySQLMessage = {
+      message_id: response.message_id,
+      conversation_id: response.conversation_id,
+      sender_type: "BOT",
+      message_text: response.response,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, botMessage]);
+  };
+
   return (
     <Box
       sx={{
@@ -13,7 +50,7 @@ const PipelineChatContainer: React.FC<PipelineChatContainerComponents> = ({ user
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#E0F3FF", 
+        backgroundColor: "#E0F3FF",
         padding: 4,
         margin: 0,
       }}
@@ -26,8 +63,22 @@ const PipelineChatContainer: React.FC<PipelineChatContainerComponents> = ({ user
       </Typography>
       <ConversationContainer />
 
+      <Box sx={{ width: "100%", maxWidth: 900, mb: 2 }}>
+        {messages.map((msg) => (
+          <MessageBox
+            key={msg.message_id}
+            message={msg}
+            userName={user.first_name}
+          />
+        ))}
+      </Box>
+
       <Box sx={{ width: "100%", maxWidth: 900 }}>
-        <ChatBox />
+        <ChatBox
+          pipelineId={pipeline?.pipeline_id}
+          conversationId={conversationId}
+          onMessageSent={handleMessageSent}
+        />
       </Box>
     </Box>
   );

@@ -1,5 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
+from google.cloud.firestore_v1.vector import Vector
+from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 import os
 import numpy as np
 from typing import List, Dict, Any, Optional
@@ -78,18 +80,22 @@ class FirestoreService:
                 embedding_list = embedding
             
             data = {
-                'embedding': embedding_list,
+                'embedding': Vector(embedding_list),
                 'text': text
             }
             
             if metadata_list and i < len(metadata_list):
-                data.update(metadata_list[i])
+                metadata = metadata_list[i].copy()
+                if 'pipeline_id' in metadata and metadata['pipeline_id'] is not None:
+                    metadata['pipeline_id'] = int(metadata['pipeline_id'])
+                data.update(metadata)
             
             doc_ref = self.db.collection('embeddings').document(chunk_id)
             batch.set(doc_ref, data)
             count += 1
         
         batch.commit()
+        print(f"Stored {count} embeddings with metadata: {metadata_list[0] if metadata_list else 'None'}")
         return count
     
     def get_embedding(self, document_id: str) -> Optional[Dict[str, Any]]:
@@ -104,6 +110,79 @@ class FirestoreService:
             query = query.limit(limit)
         docs = query.stream()
         return [{'id': doc.id, **doc.to_dict()} for doc in docs]
+
+    def find_nearest_embeddings(
+        self,
+        query_vector: List[float],
+        pipeline_id: Optional[int] = None,
+        top_k: int = 5,
+        distance_measure: str = "COSINE"
+    ) -> List[Dict[str, Any]]:
+        try:
+            collection = self.db.collection('embeddings')
+            
+            measure_map = {
+                "COSINE": DistanceMeasure.COSINE,
+                "EUCLIDEAN": DistanceMeasure.EUCLIDEAN,
+                "DOT_PRODUCT": DistanceMeasure.DOT_PRODUCT
+            }
+            measure = measure_map.get(distance_measure.upper(), DistanceMeasure.COSINE)
+            
+            limit = top_k * 3 if pipeline_id else top_k
+            
+            print(f"Searching for embeddings with pipeline_id={pipeline_id}, top_k={top_k}, limit={limit}")
+            
+            vector_query = collection.find_nearest(
+                vector_field="embedding",
+                query_vector=Vector(query_vector),
+                distance_measure=measure,
+                limit=limit,
+                distance_result_field="vector_distance"
+            )
+            
+            docs = vector_query.stream()
+            
+            results = []
+            checked = 0
+            for doc in docs:
+                checked += 1
+                data = doc.to_dict()
+                doc_pipeline_id = data.get('pipeline_id')
+                
+                if pipeline_id is not None:
+                    if doc_pipeline_id is None:
+                        continue
+                    if int(doc_pipeline_id) != int(pipeline_id):
+                        continue
+                
+                distance = data.pop('vector_distance', None)
+                
+                if measure == DistanceMeasure.COSINE:
+                    similarity_score = 1 - distance if distance is not None else 0
+                else:
+                    similarity_score = 1 / (1 + distance) if distance is not None else 0
+                
+                results.append({
+                    'id': doc.id,
+                    'text': data.get('text', ''),
+                    'file_name': data.get('file_name', 'Unknown'),
+                    'chunk_index': data.get('chunk_index', 0),
+                    'document_id': data.get('document_id'),
+                    'pipeline_id': int(doc_pipeline_id) if doc_pipeline_id is not None else None,
+                    'similarity_score': similarity_score,
+                    'distance': distance
+                })
+                
+                if len(results) >= top_k:
+                    break
+            
+            print(f"Checked {checked} embeddings, found {len(results)} matching pipeline_id={pipeline_id}")
+            return results
+        except Exception as e:
+            print(f"Error in find_nearest_embeddings: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return []
 
 if __name__ == "__main__":
     service = FirestoreService()

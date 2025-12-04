@@ -1,14 +1,51 @@
 import React from "react";
-import { Box, TextField, Button } from "@mui/material";
+import { Box, TextField, Button, CircularProgress } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import { sendChatMessage, type ChatResponse } from "../services/chat";
+import { auth } from "../firebase";
 
-export default function ChatBox() {
+interface ChatBoxProps {
+  pipelineId?: number;
+  conversationId?: number;
+  onMessageSent?: (response: ChatResponse) => void;
+}
+
+export default function ChatBox({
+  pipelineId,
+  conversationId,
+  onMessageSent,
+}: ChatBoxProps) {
   const [message, setMessage] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const handleSend = () => {
-    if (message.trim()) {
-      console.log("Sending message:", message);
+  const handleSend = async () => {
+    if (!message.trim() || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error("User not authenticated");
+        return;
+      }
+
+      const token = await user.getIdToken();
+      const response = await sendChatMessage(
+        token,
+        message,
+        conversationId,
+        pipelineId
+      );
+
       setMessage("");
+
+      if (onMessageSent) {
+        onMessageSent(response);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -40,6 +77,7 @@ export default function ChatBox() {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyPress={handleKeyPress}
+        disabled={isLoading}
         variant="standard"
         sx={{
           "& .MuiInputBase-root": {
@@ -66,8 +104,14 @@ export default function ChatBox() {
         <Button
           variant="contained"
           onClick={handleSend}
-          endIcon={<SendIcon />}
-          disabled={!message.trim()}
+          endIcon={
+            isLoading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <SendIcon />
+            )
+          }
+          disabled={!message.trim() || isLoading}
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -82,7 +126,7 @@ export default function ChatBox() {
             },
           }}
         >
-          {"Send"}
+          {isLoading ? "Sending..." : "Send"}
         </Button>
       </Box>
     </Box>
