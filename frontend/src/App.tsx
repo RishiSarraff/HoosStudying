@@ -25,6 +25,7 @@ const App: React.FC = () => {
       setPipeline(defaultPipeline);
     } catch (err) {
       console.error("Failed to fetch default pipeline", err);
+      // Don't set pipeline to null, keep it as is or handle error state
     }
   };
   const fetchNonDefaultPipelines = async (token: string) => {
@@ -37,27 +38,44 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // Safety timeout to ensure loading is always set to false
+    const timeoutId = setTimeout(() => {
+      console.warn("Auth listener timeout - setting loading to false");
+      setLoading(false);
+    }, 10000); // 10 second timeout
+
     const unsubscribe = setupAuthListener(
       async (mysqlUser) => {
-        setUser(mysqlUser);
-        if (mysqlUser.needs_name) {
-          setNeedsName(true);
-        } else {
-          const token = await getCurrentToken();
-          if (token) {
-            await fetchDefaultPipeline(token);
-            await fetchNonDefaultPipelines(token);
+        try {
+          clearTimeout(timeoutId);
+          setUser(mysqlUser);
+          if (mysqlUser.needs_name) {
+            setNeedsName(true);
+          } else {
+            const token = await getCurrentToken();
+            if (token) {
+              await fetchDefaultPipeline(token);
+              await fetchNonDefaultPipelines(token);
+            }
           }
+        } catch (error) {
+          console.error("Error in auth callback:", error);
+        } finally {
+          clearTimeout(timeoutId);
+          setLoading(false);
         }
-        setLoading(false);
       },
       () => {
+        clearTimeout(timeoutId);
         setUser(null);
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, []);
 
   if (loading) {

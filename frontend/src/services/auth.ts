@@ -48,6 +48,9 @@ export function setupAuthListener(
                 onUserSynced(mysqlUser);
             } catch (error) {
                 console.error('Error syncing user to MySQL:', error);
+                // Call onUserSignedOut to ensure loading state is set to false
+                // This allows the app to show the auth page if backend is down
+                onUserSignedOut();
             }
         } else {
             onUserSignedOut();
