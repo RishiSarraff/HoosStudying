@@ -1,3 +1,6 @@
+import { type HsvaColor, type ColorResult } from '@uiw/color-convert';
+import { type SwatchProps } from '@uiw/react-color-swatch';
+
 export interface MySQLUser {
     user_id: number,
     firebase_uid: string,
@@ -181,4 +184,18 @@ export interface MessageBoxProps {
 export interface PipelineTagProps{
     pipeline_tag: MySQLTag;
     index: number;
+}
+
+export interface CreateTagModalProps{
+    pipeline_id: number,
+    user_id: number,
+    open: boolean,
+    onClose: () => void,
+    onSubmit: (data: { name: string; color: string; user_id: number; pipeline_id: number}) => void,
+}
+
+export interface ColorCircleProps extends Omit<SwatchProps, 'color' | 'onChange'> {
+  color?: string | HsvaColor;
+  onChange?: (color: ColorResult) => void;
+  pointProps?: React.HTMLAttributes<HTMLDivElement>;
 }

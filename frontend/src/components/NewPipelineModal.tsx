@@ -124,11 +124,11 @@ const NewPipelineModal: React.FC<NewPipelineModalProps> = ({
           required 
           error={!selectedSystemTagId}
         >
-          <InputLabel>{"Category *"}</InputLabel>
+          <InputLabel>{"Category"}</InputLabel>
           <Select
             value={selectedSystemTagId}
             onChange={(e) => setSelectedSystemTagId(e.target.value as number)}
-            label="Category *"
+            label="Category"
           >
             {systemTags.map((tag) => (
               <MenuItem key={tag.tag_id} value={tag.tag_id}>

@@ -45,6 +45,7 @@ import {
   getMessagesForConversation,
 } from "../services/conversation";
 import { getCurrentToken, logout } from "../services/auth";
+import {createCustomTag} from "../services/tag";
 import PipelineCard from "./PipelineCard";
 import SettingsIcon from "@mui/icons-material/Settings";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -69,6 +70,7 @@ import ConversationCard from "./ConversationCard";
 import ConversationView from "./ConversationView";
 import HomeIcon from "@mui/icons-material/Home";
 import PipelineTag from "./PipelineTag";
+import CreateTagModal from "./CreateTagModal";
 
 const drawerWidth = 360;
 
@@ -202,6 +204,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   const [currentMessages, setCurrentMessages] = useState<MySQLMessage[]>();
   const [openGeneralPipelineChatPage, setOpenGeneralPipelineChatPage] =
     useState<boolean>(false);
+  const [openCreateTagModal, setOpenCreateTagModal] = useState<boolean>(false);
 
   const showAlert = (
     message: string,
@@ -389,6 +392,30 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     if (!currentConversation) return;
     console.log("Sending:", messageText);
     await retrieveMessagesFromConvo(currentConversation.conversation_id);
+  };
+
+  const handleNewCustomTag = async (data: {
+    name: string;
+    color: string;
+    user_id: number;
+    pipeline_id: number;
+  }) => {
+    try{
+      const token = await getCurrentToken()
+
+      if(token){
+        const customTagResponse = await createCustomTag(token, data.name, data.color, data.user_id, data.pipeline_id)
+
+        if (customTagResponse) {
+          showAlert("Successfully Added Custom Tag", "success");
+        } else {
+          showAlert("Failed to Add Custom Tag", "error");
+        }
+      }
+
+    }catch(e){
+      console.error("Could not create a new custom tag: ", e)
+    }
   };
 
   return (
@@ -611,6 +638,12 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                 currentPipeline.pipeline_tags.length > 0 && (
                   <Box
                     sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}>
+                  <Box
+                    sx={{
                       mb: 2,
                       maxHeight: "120px",
                       overflowY: "auto",
@@ -631,9 +664,11 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                       "&::-webkit-scrollbar-thumb:hover": {
                         background: "#555",
                       },
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
                     }}
                   >
-                    {/* System Tags */}
                     {currentPipeline.pipeline_tags.filter(
                       (t) => t.tag_type === "system"
                     ).length > 0 && (
@@ -663,7 +698,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                       </Box>
                     )}
 
-                    {/* Custom Tags */}
                     {currentPipeline.pipeline_tags.filter(
                       (t) => t.tag_type === "custom"
                     ).length > 0 && (
@@ -692,9 +726,21 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                         </Box>
                       </Box>
                     )}
+                    </Box>
+                    <IconButton
+                      aria-label="Create a new Tag"
+                      onClick={() => setOpenCreateTagModal(true)}
+                      size="small"
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                      }}
+                    >
+                      <AddIcon />
+                    </IconButton>
                   </Box>
                 )}
-
               <Box
                 sx={{
                   display: "flex",
@@ -970,6 +1016,19 @@ const MainScreen: React.FC<MainScreenInputs> = ({
           }}
           isEditMode={true}
           pipeline={currentPipeline}
+        />
+      ) : null}
+
+      {openCreateTagModal ? (
+        <CreateTagModal
+          user_id={user.user_id}
+          open={openCreateTagModal}
+          onClose={() => setOpenCreateTagModal(false)}
+          onSubmit={(data) => {
+            handleNewCustomTag(data);
+            setOpenCreateTagModal(false);
+          }}
+          pipeline_id={currentPipeline.pipeline_id}
         />
       ) : null}
     </div>
