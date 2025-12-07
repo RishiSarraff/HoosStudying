@@ -17,6 +17,7 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
+import LabelIcon from "@mui/icons-material/Label";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ListItem from "@mui/material/ListItem";
@@ -32,6 +33,7 @@ import {
   type MainScreenInputs,
   type MySQLConversation,
   type MySQLMessage,
+  type MySQLTag,
 } from "../types/index";
 import NewPipelineModal from "./NewPipelineModal";
 import {
@@ -45,9 +47,8 @@ import {
   getMessagesForConversation,
 } from "../services/conversation";
 import { getCurrentToken, logout } from "../services/auth";
-import {createCustomTag} from "../services/tag";
+import { createCustomTag, deleteCustomTag } from "../services/tag";
 import PipelineCard from "./PipelineCard";
-import SettingsIcon from "@mui/icons-material/Settings";
 import FolderIcon from "@mui/icons-material/Folder";
 import {
   Button,
@@ -55,9 +56,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  InputLabel,
-  Select,
+  Collapse,
 } from "@mui/material";
 import CustomAlert from "./CustomAlert";
 import FilesButton from "./FilesButton";
@@ -71,6 +70,10 @@ import ConversationView from "./ConversationView";
 import HomeIcon from "@mui/icons-material/Home";
 import PipelineTag from "./PipelineTag";
 import CreateTagModal from "./CreateTagModal";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import RemoveIcon from "@mui/icons-material/Remove";
+import DeleteTagModal from "./DeleteTagModal";
 
 const drawerWidth = 360;
 
@@ -175,6 +178,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
       pipeline_tags: p.pipeline_tags || [],
     }))
   );
+  const [currentCategory, setCurrentCategory] = useState<MySQLTag>();
 
   React.useEffect(() => {
     setListOfPipelines(
@@ -205,6 +209,10 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   const [openGeneralPipelineChatPage, setOpenGeneralPipelineChatPage] =
     useState<boolean>(false);
   const [openCreateTagModal, setOpenCreateTagModal] = useState<boolean>(false);
+  const [openDeleteTagModal, setOpenDeleteTagModal] = useState<boolean>(false);
+  const [expandedCategories, setExpandedCategories] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   const showAlert = (
     message: string,
@@ -400,21 +408,127 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     user_id: number;
     pipeline_id: number;
   }) => {
-    try{
-      const token = await getCurrentToken()
+    try {
+      const token = await getCurrentToken();
 
-      if(token){
-        const customTagResponse = await createCustomTag(token, data.name, data.color, data.user_id, data.pipeline_id)
+      if (token) {
+        const customTagResponse = await createCustomTag(
+          token,
+          data.name,
+          data.color,
+          data.user_id,
+          data.pipeline_id
+        );
 
         if (customTagResponse) {
+          setCurrentPipeline((prev) => ({
+            ...prev,
+            pipeline_tags: [...prev.pipeline_tags, customTagResponse],
+          }));
+
+          setListOfPipelines((prev) =>
+            prev.map((p) =>
+              p.pipeline_id === currentPipeline.pipeline_id
+                ? {
+                    ...p,
+                    pipeline_tags: [...p.pipeline_tags, customTagResponse],
+                  }
+                : p
+            )
+          );
+
           showAlert("Successfully Added Custom Tag", "success");
         } else {
           showAlert("Failed to Add Custom Tag", "error");
         }
       }
+    } catch (e) {
+      console.error("Could not create a new custom tag: ", e);
+    }
+  };
 
-    }catch(e){
-      console.error("Could not create a new custom tag: ", e)
+  const groupPipelinesByCategory = (pipelines: MySQLPipeline[]) => {
+    const grouped: { [key: string]: MySQLPipeline[] } = {};
+
+    pipelines.forEach((pipeline) => {
+      const systemTag = pipeline.pipeline_tags.find(
+        (tag: MySQLTag) => tag.tag_type === "system"
+      );
+
+      const categoryName = systemTag?.name || "Other";
+
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = [];
+      }
+
+      grouped[categoryName].push(pipeline);
+    });
+
+    return grouped;
+  };
+
+  const getOnlyCustomTags = (pipeline: MySQLPipeline) => {
+    return (
+      pipeline.pipeline_tags.filter(
+        (tag: MySQLTag) => tag.tag_type === "custom"
+      ) || []
+    );
+  };
+
+  const toggleCategory = (categoryName: string) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [categoryName]: !prev[categoryName],
+    }));
+  };
+
+  const getCategoryColor = (
+    categoryName: string,
+    pipelines: MySQLPipeline[]
+  ) => {
+    const firstPipeline = pipelines[0];
+    const systemTag = firstPipeline?.pipeline_tags?.find(
+      (tag: MySQLTag) => tag.tag_type === "system"
+    );
+    return systemTag?.color || "#E0E0E0";
+  };
+
+  const getSystemTag = (pipeline: MySQLPipeline) => {
+    const systemTag = pipeline?.pipeline_tags.find(
+      (tag: MySQLTag) => tag.tag_type === "system"
+    );
+
+    return systemTag;
+  };
+
+  const deleteNewCustomTag = async (data: { tag_id: number }) => {
+    try {
+      const token = await getCurrentToken();
+      if (token) {
+        const result = await deleteCustomTag(token, data.tag_id);
+        if (result) {
+          showAlert("Successfully Deleted Custom Tag", "success");
+
+          await refreshPipelines();
+
+          setTimeout(() => {
+            setListOfPipelines((prev) => {
+              const updated = prev.find(
+                (p) => p.pipeline_id === currentPipeline.pipeline_id
+              );
+              if (updated) {
+                setCurrentPipeline(updated);
+              }
+              return prev;
+            });
+          }, 100);
+        } else {
+          showAlert("Failed to Delete Custom Tag", "error");
+        }
+      }
+    } catch (e) {
+      console.error("Could not delete custom tag: ", e);
+      showAlert("Error Deleting Custom Tag", "error");
     }
   };
 
@@ -452,19 +566,25 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                 {viewMode ? "General Chat" : currentPipeline.pipeline_name}
               </Typography>
               {!viewMode ? (
-                <IconButton
-                  color="inherit"
-                  aria-label="open drawer"
-                  onClick={() => setOpenEditPipelineModal(true)}
-                  edge="start"
-                  sx={[
-                    {
-                      marginRight: 2,
-                    },
-                  ]}
-                >
-                  <EditSquareIcon />
-                </IconButton>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <IconButton
+                    color="inherit"
+                    aria-label="open drawer"
+                    onClick={() => setOpenEditPipelineModal(true)}
+                    edge="start"
+                    sx={[
+                      {
+                        marginRight: 2,
+                      },
+                    ]}
+                  >
+                    <EditSquareIcon />
+                  </IconButton>
+                  <LabelIcon sx={{ color: currentCategory?.color }} />
+                  <Typography variant="h6" noWrap component="div">
+                    {currentCategory?.name}
+                  </Typography>
+                </Box>
               ) : null}
             </Box>
 
@@ -587,11 +707,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                   },
                 }}
               />
-              {open && (
-                <IconButton onClick={() => goToSettingsHandler()}>
-                  <SettingsIcon />
-                </IconButton>
-              )}
             </ListItem>
             <Divider sx={{ mt: 1, mb: 1 }} />
 
@@ -636,109 +751,101 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                 currentPipeline &&
                 currentPipeline.pipeline_tags &&
                 currentPipeline.pipeline_tags.length > 0 && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}>
-                  <Box
-                    sx={{
-                      mb: 2,
-                      maxHeight: "120px",
-                      overflowY: "auto",
-                      overflowX: "hidden",
-                      pb: 1,
-                      borderBottom: "1px solid #E0E0E0",
-                      "&::-webkit-scrollbar": {
-                        width: "6px",
-                      },
-                      "&::-webkit-scrollbar-track": {
-                        background: "#f1f1f1",
-                        borderRadius: "3px",
-                      },
-                      "&::-webkit-scrollbar-thumb": {
-                        background: "#888",
-                        borderRadius: "3px",
-                      },
-                      "&::-webkit-scrollbar-thumb:hover": {
-                        background: "#555",
-                      },
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    {currentPipeline.pipeline_tags.filter(
-                      (t) => t.tag_type === "system"
-                    ).length > 0 && (
-                      <Box sx={{ mb: 1 }}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            mb: 0.5,
-                            color: "#757575",
-                          }}
-                        >
-                          {"Category"}
-                        </Typography>
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                          {currentPipeline.pipeline_tags
-                            .filter((t) => t.tag_type === "system")
-                            .map((pipeline_tag, index) => (
-                              <PipelineTag
-                                key={pipeline_tag.tag_id}
-                                pipeline_tag={pipeline_tag}
-                                index={index}
-                              />
-                            ))}
-                        </Box>
-                      </Box>
-                    )}
-
-                    {currentPipeline.pipeline_tags.filter(
-                      (t) => t.tag_type === "custom"
-                    ).length > 0 && (
-                      <Box>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            mb: 0.5,
-                            color: "#757575",
-                          }}
-                        >
-                          {"Tags"}
-                        </Typography>
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                          {currentPipeline.pipeline_tags
-                            .filter((t) => t.tag_type === "custom")
-                            .map((pipeline_tag, index) => (
-                              <PipelineTag
-                                key={pipeline_tag.tag_id}
-                                pipeline_tag={pipeline_tag}
-                                index={index}
-                              />
-                            ))}
-                        </Box>
-                      </Box>
-                    )}
-                    </Box>
-                    <IconButton
-                      aria-label="Create a new Tag"
-                      onClick={() => setOpenCreateTagModal(true)}
-                      size="small"
+                  <Box>
+                    <Box
                       sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                       }}
                     >
-                      <AddIcon />
-                    </IconButton>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          color: "#757575",
+                        }}
+                      >
+                        {"Tags"}
+                      </Typography>
+                      <Box sx={{ justifyContent: "flex-end" }}>
+                        <IconButton
+                          aria-label="Create a new Tag"
+                          onClick={() => setOpenCreateTagModal(true)}
+                          size="small"
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                          }}
+                        >
+                          <AddIcon />
+                        </IconButton>
+                        <IconButton
+                          aria-label="Delete an existing Tag"
+                          onClick={() => setOpenDeleteTagModal(true)}
+                          size="small"
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                          }}
+                        >
+                          <RemoveIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          mb: 2,
+                          maxHeight: "120px",
+                          overflowY: "auto",
+                          overflowX: "hidden",
+                          pb: 1,
+                          "&::-webkit-scrollbar-track": {
+                            background: "#f1f1f1",
+                            borderRadius: "3px",
+                          },
+                          "&::-webkit-scrollbar-thumb": {
+                            background: "#888",
+                            borderRadius: "3px",
+                          },
+                          "&::-webkit-scrollbar-thumb:hover": {
+                            background: "#555",
+                          },
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        {currentPipeline.pipeline_tags.filter(
+                          (t) => t.tag_type === "custom"
+                        ).length > 0 && (
+                          <Box
+                            sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}
+                          >
+                            {currentPipeline.pipeline_tags
+                              .filter((t) => t.tag_type === "custom")
+                              .map((pipeline_tag, index) => (
+                                <PipelineTag
+                                  key={pipeline_tag.tag_id}
+                                  pipeline_tag={pipeline_tag}
+                                  index={index}
+                                />
+                              ))}
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
                   </Box>
                 )}
               <Box
@@ -779,79 +886,149 @@ const MainScreen: React.FC<MainScreenInputs> = ({
           )}
           <List>
             {viewMode
-              ? listOfPipelines.map((p, index) => (
-                  <ListItem
-                    key={p.pipeline_id}
-                    disablePadding
-                    sx={{ display: "block" }}
-                  >
-                    {open ? (
-                      <ListItemButton
+              ? Object.entries(groupPipelinesByCategory(listOfPipelines)).map(
+                  ([categoryName, pipelines]) => (
+                    <Box key={categoryName}>
+                      <ListItem
                         sx={{
-                          minHeight: 48,
-                          px: 2.5,
+                          backgroundColor: getCategoryColor(
+                            categoryName,
+                            pipelines
+                          ),
+                          px: open ? 2.5 : 0,
+                          py: 1.5,
                           justifyContent: open ? "initial" : "center",
+                          cursor: "pointer",
+                          "&:hover": {
+                            opacity: 0.9,
+                          },
                         }}
-                        onClick={() => {
-                          setListOfConversations([]);
-                          setCurrentConversation(undefined);
-                          setCurrentMessages(undefined);
-                          setOpenGeneralPipelineChatPage(true);
-                          retrievePipelineConversations(p);
-                          setViewMode(false);
-                          setCurrentPipeline(p);
-                        }}
+                        onClick={() => toggleCategory(categoryName)}
                       >
-                        <PipelineCard
-                          pipeline_name={p.pipeline_name}
-                          pipeline_description={p.description}
-                          number_of_documents={p.number_of_documents}
-                          pipeline_tags={p.pipeline_tags}
-                          index={index}
-                          onDelete={() => {
-                            setOpenDeleteModal(true);
-                            setPipelineToDelete(p);
-                          }}
-                        />
-                      </ListItemButton>
-                    ) : (
-                      <ListItemButton
-                        sx={{
-                          minHeight: 48,
-                          justifyContent: "center",
-                        }}
-                      >
-                        {" "}
-                        <ListItemIcon
-                          sx={{ minWidth: 0, justifyContent: "center" }}
-                        >
-                          <Box
-                            sx={{
-                              position: "relative",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <FolderIcon
-                              sx={{ fontSize: 28, color: "#424242" }}
-                            />
+                        {open ? (
+                          <>
                             <Typography
+                              variant="subtitle2"
+                              fontWeight={600}
                               sx={{
-                                position: "absolute",
-                                fontSize: "0.7rem",
-                                fontWeight: 600,
                                 color: "#FFFFFF",
+                                flexGrow: 1,
                               }}
                             >
-                              {index + 1}
+                              {categoryName}
                             </Typography>
-                          </Box>
-                        </ListItemIcon>
-                      </ListItemButton>
-                    )}
-                  </ListItem>
-                ))
+                            <Box sx={{ color: "#FFFFFF" }}>
+                              {expandedCategories[categoryName] ? (
+                                <ExpandLessIcon />
+                              ) : (
+                                <ExpandMoreIcon />
+                              )}
+                            </Box>
+                          </>
+                        ) : (
+                          <Box
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: "50%",
+                              backgroundColor: "#FFFFFF",
+                            }}
+                          />
+                        )}
+                      </ListItem>
+
+                      <Collapse
+                        in={expandedCategories[categoryName]}
+                        timeout="auto"
+                        unmountOnExit
+                      >
+                        <Box
+                          sx={{
+                            backgroundColor: "#FAFAFA",
+                          }}
+                        >
+                          {pipelines.map((p, index) => (
+                            <ListItem
+                              key={p.pipeline_id}
+                              disablePadding
+                              sx={{ display: "block" }}
+                            >
+                              {open ? (
+                                <ListItemButton
+                                  sx={{
+                                    minHeight: 48,
+                                    px: 2.5,
+                                    justifyContent: open ? "initial" : "center",
+                                  }}
+                                  onClick={() => {
+                                    setListOfConversations([]);
+                                    setCurrentConversation(undefined);
+                                    setCurrentMessages(undefined);
+                                    setOpenGeneralPipelineChatPage(true);
+                                    setCurrentCategory(getSystemTag(p));
+                                    retrievePipelineConversations(p);
+                                    setViewMode(false);
+                                    setCurrentPipeline(p);
+                                  }}
+                                >
+                                  <PipelineCard
+                                    pipeline_name={p.pipeline_name}
+                                    pipeline_description={p.description}
+                                    number_of_documents={p.number_of_documents}
+                                    pipeline_tags={getOnlyCustomTags(p)}
+                                    index={index}
+                                    onDelete={() => {
+                                      setOpenDeleteModal(true);
+                                      setPipelineToDelete(p);
+                                    }}
+                                    systemTag={currentCategory}
+                                  />
+                                </ListItemButton>
+                              ) : (
+                                <ListItemButton
+                                  sx={{
+                                    minHeight: 48,
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  <ListItemIcon
+                                    sx={{
+                                      minWidth: 0,
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        position: "relative",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                      }}
+                                    >
+                                      <FolderIcon
+                                        sx={{ fontSize: 28, color: "#424242" }}
+                                      />
+                                      <Typography
+                                        sx={{
+                                          position: "absolute",
+                                          fontSize: "0.7rem",
+                                          fontWeight: 600,
+                                          color: "#FFFFFF",
+                                        }}
+                                      >
+                                        {index + 1}
+                                      </Typography>
+                                    </Box>
+                                  </ListItemIcon>
+                                </ListItemButton>
+                              )}
+                            </ListItem>
+                          ))}
+                        </Box>
+                      </Collapse>
+                    </Box>
+                  )
+                )
               : listOfConversations.map((convo, index) => (
                   <ListItem
                     key={convo.conversation_id}
@@ -1029,6 +1206,17 @@ const MainScreen: React.FC<MainScreenInputs> = ({
             setOpenCreateTagModal(false);
           }}
           pipeline_id={currentPipeline.pipeline_id}
+        />
+      ) : null}
+      {openDeleteTagModal ? (
+        <DeleteTagModal
+          open={openDeleteTagModal}
+          onClose={() => setOpenDeleteTagModal(false)}
+          onSubmit={(data) => {
+            deleteNewCustomTag(data);
+            setOpenDeleteTagModal(false);
+          }}
+          listOfCustomTags={getOnlyCustomTags(currentPipeline)}
         />
       ) : null}
     </div>

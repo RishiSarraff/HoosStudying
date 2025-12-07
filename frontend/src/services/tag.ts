@@ -20,3 +20,16 @@ export async function createCustomTag(
     );
     return response.data;
   }
+
+
+export async function deleteCustomTag(token: string, tag_id: number): Promise<boolean>{
+    const response = await axios.delete(`http://localhost:8000/api/tag/delete-tag/${tag_id}`,
+        {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            },
+        }
+    );
+
+    return response.data.success || true;
+}

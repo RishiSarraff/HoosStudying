@@ -1,6 +1,9 @@
 import { type HsvaColor, type ColorResult } from '@uiw/color-convert';
 import { type SwatchProps } from '@uiw/react-color-swatch';
 
+const CATEGORIES = ['Work', 'Personal', 'School', 'Other'] as const;
+type Category = typeof CATEGORIES[number]
+
 export interface MySQLUser {
     user_id: number,
     firebase_uid: string,
@@ -62,6 +65,7 @@ export interface MySQLPipeline {
     created_at: Date
     number_of_documents?: number
     pipeline_tags: MySQLTag[]
+    category?: Category;
 }
 
 export interface NewPipelineModalProps{
@@ -89,6 +93,7 @@ export interface PipelineCardProps{
     index: number
     pipeline_tags?: MySQLTag[]
     onDelete: () => void;
+    systemTag: MySQLTag | undefined;
 }
 
 export interface AlertProps {
@@ -192,6 +197,13 @@ export interface CreateTagModalProps{
     open: boolean,
     onClose: () => void,
     onSubmit: (data: { name: string; color: string; user_id: number; pipeline_id: number}) => void,
+}
+
+export interface DeleteTagModalProps{
+    open: boolean,
+    onClose: () => void,
+    onSubmit: (data: { tag_id: number}) => void,
+    listOfCustomTags: MySQLTag[];
 }
 
 export interface ColorCircleProps extends Omit<SwatchProps, 'color' | 'onChange'> {

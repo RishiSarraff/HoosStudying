@@ -226,7 +226,7 @@ def delete_tag(db: Session, tag_id: int) -> bool:
 
         db.commit()
 
-        return result.mappings().first() is not None
+        return result.rowcount > 0
 
     except Exception as e:
         db.rollback()

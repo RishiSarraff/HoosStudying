@@ -79,7 +79,9 @@ def get_conversations_by_pipeline(db: Session, pipeline_id: int) -> List[Dict[st
                 SELECT * 
                 FROM Conversation 
                 WHERE pipeline_id = :pipeline_id 
-                ORDER BY last_message_at DESC
+                ORDER BY 
+                    CASE WHEN last_message_at IS NULL THEN 1 ELSE 0 END,
+                    last_message_at DESC
             """
         ),{
             'pipeline_id': pipeline_id

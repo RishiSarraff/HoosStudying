@@ -57,23 +57,39 @@ async def getConversations(
         list_of_conversations = []
 
         for eachConversation in list_of_conversations_unformatted:
-            eachConversationDict = dict(eachConversation)
-            first_message = messageFunctions.get_first_message_in_conversation(
-                db, 
-                eachConversation["conversation_id"]
-            )
-            eachConversationDict["first_message_content"] = (
-                first_message["message_text"] if first_message else "No messages yet"
-            )
-            list_of_conversations.append(eachConversationDict)
-
+            conversation_dict = dict(eachConversation)
+            
+            conversation_id = conversation_dict.get("conversation_id")
+            
+            if conversation_id:
+                try:
+                    first_message = messageFunctions.get_first_message_in_conversation(
+                        db, 
+                        conversation_id
+                    )
+                    
+                    if first_message:
+                        conversation_dict["first_message_content"] = first_message.get("message_text", "No messages yet")
+                    else:
+                        conversation_dict["first_message_content"] = "No messages yet"
+                        
+                except Exception as msg_error:
+                    print(f"Error getting first message for conversation {conversation_id}: {msg_error}")
+                    conversation_dict["first_message_content"] = "No messages yet"
+            else:
+                conversation_dict["first_message_content"] = "No messages yet"
+            
+            list_of_conversations.append(conversation_dict)
         
-        return list_of_conversations if list_of_conversations else []
+        return list_of_conversations
 
     except ValueError as e:
+        print(f"ValueError in getConversations: {str(e)}")
         raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:
-        print("ERROR IN getConversations:", e)
+        print(f"ERROR IN getConversations: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/conversation/{conversation_id}/messages", response_model=List[MessageResponse])

@@ -127,3 +127,60 @@ async def createCustomTag(
         raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.delete("/delete-tag/{tag_id}")
+async def deleteTag(
+    tag_id: int,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    try:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+        
+        token = authorization.replace("Bearer ", "")
+        firebase_user = verify_firebase_token(token)
+        firebase_uid = firebase_user.get("uid")
+
+        user = userFunctions.get_user_by_firebase_uid(
+            db,
+            firebase_uid
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+    
+        tag = tagFunctions.get_tag_by_id(db, tag_id)
+
+        if not tag:
+            raise HTTPException(
+                status_code=404,
+                detail="Tag not found"
+            )
+        
+        if tag["user_id"] != user["user_id"]:
+            raise HTTPException(
+                status_code=403,
+                detail="You don't have permission to delete this Tag"
+            )
+
+        resultOfTagDeletion = tagFunctions.delete_tag(
+            db,
+            tag["tag_id"]
+        )
+
+        if not resultOfTagDeletion:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to delete Tag"
+            )
+
+        return {"success": True, "message": "Tag deleted successfully"}
+
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
