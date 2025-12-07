@@ -49,6 +49,7 @@ export interface GeneralChatContainerComponents {
 export interface PipelineChatContainerComponents{
     user: MySQLUser;
     pipeline?: MySQLPipeline;
+    onConversationCreated?: (conversationId: number) => void;
 }
 
 export interface MainScreenInputs {
@@ -109,6 +110,7 @@ export interface PipelineContainerProps{
     showChat: boolean;
     refreshKey?: number;
     onDocumentChange?: () => void;
+    onConversationCreated?: (conversationId: number) => void;
 }
 
 export interface PipelineFilesContainerProps{
@@ -179,6 +181,7 @@ export interface ConversationViewProps {
   messages: MySQLMessage[];
   user: MySQLUser;
   onSendMessage: (messageText: string) => void;
+  loading: boolean
 }
 
 export interface MessageBoxProps {

@@ -8,12 +8,13 @@ const PipelineContainer: React.FC<PipelineContainerProps> = ({
   pipeline,
   showChat,
   refreshKey = 0,
-  onDocumentChange
+  onDocumentChange,
+  onConversationCreated
 }) => {
   return (
     <Box>
       {showChat ? (
-        <PipelineChatContainer user={user} pipeline={pipeline} />
+        <PipelineChatContainer user={user} pipeline={pipeline} onConversationCreated={onConversationCreated}/>
       ) : (
         <PipelineFilesContainer
           key={refreshKey}

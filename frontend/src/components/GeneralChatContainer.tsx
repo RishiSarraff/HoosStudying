@@ -18,20 +18,29 @@ const GeneralChatContainer: React.FC<GeneralChatContainerComponents> = ({
     number | undefined
   >();
 
-  const handleMessageSent = (response: ChatResponse) => {
+  const handleMessageSent = (userText: string, response: ChatResponse) => {
     if (!conversationId) {
       setConversationId(response.conversation_id);
     }
 
+    const userMessage: MySQLMessage = {
+      message_id: Date.now(), 
+      conversation_id: response.conversation_id,
+      sender_type: "user",
+      message_text: userText,
+      timestamp: new Date(),
+    };
+
+
     const botMessage: MySQLMessage = {
       message_id: response.message_id,
       conversation_id: response.conversation_id,
-      sender_type: "BOT",
+      sender_type: "bot",
       message_text: response.response,
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, botMessage]);
+    setMessages((prev) => [...prev, userMessage, botMessage]);
   };
 
   return (

@@ -30,3 +30,23 @@ export async function getConversations(
     );
     return response.data;
   }
+
+  export async function deleteConversation(
+    token: string,
+    conversation_id: number
+  ): Promise<boolean> {
+    try {
+      const response = await axios.delete(
+        `http://localhost:8000/api/chat/conversation/${conversation_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return response.status === 200;
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      return false;
+    }
+  }

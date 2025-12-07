@@ -79,7 +79,7 @@ async def send_chat_message(
         if request.conversation_id:
             messages = messageFunctions.get_all_messages_in_conversation(db, conversation_id)
             for msg in messages:
-                role = "user" if msg["sender_type"] == "USER" else "assistant"
+                role = "user" if msg["sender_type"] == "user" else "bot"
                 conversation_history.append({
                     "role": role,
                     "content": msg["message_text"]
@@ -156,3 +156,42 @@ async def create_new_conversation(
         print("ERROR IN create_new_conversation:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/conversation/{conversation_id}")
+async def delete_conversation(
+    conversation_id: int,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    try:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing authorization")
+        
+        token = authorization.replace("Bearer ", "")
+        firebase_user = verify_firebase_token(token)
+        firebase_uid = firebase_user.get("uid")
+
+        user = userFunctions.get_user_by_firebase_uid(db, firebase_uid)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        conversation = conversationFunctions.get_conversation_by_id(db, conversation_id)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        if conversation["user_id"] != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Unauthorized")
+
+        result = conversationFunctions.delete_conversation(db, conversation_id)
+        
+        if result:
+            return {"message": "Conversation deleted successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete conversation")
+
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("ERROR IN delete_conversation:", e)
+        raise HTTPException(status_code=500, detail=str(e))

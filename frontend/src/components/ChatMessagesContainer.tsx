@@ -29,7 +29,7 @@ const ChatMessagesContainer: React.FC<ChatMessagesContainerProps> = ({
         overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#FAFAFA',
+        backgroundColor: '#E0F3FF',
         py: 3,
         minHeight: 0,
       }}

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import upload, auth, pipelines, documents, conversations, tags
+from app.routers import upload, auth, pipelines, documents, conversations, tags, chat
 
 app = FastAPI()
 
@@ -14,10 +14,11 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(upload.router, prefix="/api", tags=["upload"])
-app.include_router(pipelines.router, prefix="/api/pipeline", tags="pipeline")
-app.include_router(documents.router, prefix="/api/document", tags="document")
-app.include_router(conversations.router, prefix="/api/conversation", tags="conversation")
-app.include_router(tags.router,prefix="/api/tag", tags=["tag"] )
+app.include_router(pipelines.router, prefix="/api/pipeline", tags=["pipeline"])
+app.include_router(documents.router, prefix="/api/document", tags=["document"])
+app.include_router(conversations.router, prefix="/api/conversation", tags=["conversation"])
+app.include_router(tags.router, prefix="/api/tag", tags=["tag"] )
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 
 @app.get("/")
 async def root():

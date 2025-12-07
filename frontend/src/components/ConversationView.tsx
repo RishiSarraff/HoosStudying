@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, CircularProgress } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ChatMessagesContainer from '../components/ChatMessagesContainer';
 import type { ConversationViewProps } from '../types';
@@ -8,11 +8,12 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   messages,
   user,
   onSendMessage,
+  loading = false,
 }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSend = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() && !loading) {
       onSendMessage(inputValue.trim());
       setInputValue('');
     }
@@ -59,6 +60,8 @@ const ConversationView: React.FC<ConversationViewProps> = ({
             placeholder="Enter Text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
             style={{
               flex: 1,
               border: 'none',
@@ -71,15 +74,15 @@ const ConversationView: React.FC<ConversationViewProps> = ({
           />
           <IconButton
             onClick={handleSend}
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || loading}
             sx={{
-              color: inputValue.trim() ? '#424242' : '#BDBDBD',
+              color: inputValue.trim() && !loading ? '#424242' : '#BDBDBD',
               '&:hover': {
                 backgroundColor: 'rgba(0, 0, 0, 0.04)',
               },
             }}
           >
-            <SendIcon />
+            {loading ? <CircularProgress size={24} /> : <SendIcon />}
           </IconButton>
         </Box>
       </Box>

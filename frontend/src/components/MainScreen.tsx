@@ -43,6 +43,7 @@ import {
   editPipeline,
 } from "../services/pipeline";
 import {
+  deleteConversation,
   getConversations,
   getMessagesForConversation,
 } from "../services/conversation";
@@ -392,8 +393,31 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     }
   };
 
-  const conversationDeletionHandler = async () => {
-    throw "Function not implemented yet";
+  const conversationDeletionHandler = async (conversation_id: number) => {
+    try {
+      const token = await getCurrentToken();
+      if (token) {
+        const result = await deleteConversation(token, conversation_id);
+        if (result) {
+          setListOfConversations((prev) =>
+            prev.filter((c) => c.conversation_id !== conversation_id)
+          );
+          
+          if (currentConversation?.conversation_id === conversation_id) {
+            setCurrentConversation(undefined);
+            setCurrentMessages(undefined);
+            setOpenGeneralPipelineChatPage(true);
+          }
+          
+          showAlert("Successfully Deleted Conversation", "success");
+        } else {
+          showAlert("Failed to Delete Conversation", "error");
+        }
+      }
+    } catch (e) {
+      console.error("Error deleting conversation:", e);
+      showAlert("Error Deleting Conversation", "error");
+    }
   };
 
   const handleSendMessage = async (messageText: string) => {
@@ -529,6 +553,31 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     } catch (e) {
       console.error("Could not delete custom tag: ", e);
       showAlert("Error Deleting Custom Tag", "error");
+    }
+  };
+
+  const handleConversationCreated = async (conversationId: number) => {
+    try {
+      const token = await getCurrentToken();
+      if (token) {
+        const response = await getConversations(token, currentPipeline.pipeline_id);
+        if (response) {
+          setListOfConversations(response);
+          
+          const newConversation = response.find(
+            (c) => c.conversation_id === conversationId
+          );
+          
+          if (newConversation) {
+            setCurrentConversation(newConversation);
+            await retrieveMessagesFromConvo(conversationId);
+          }
+  
+        }
+      }
+    } catch (e) {
+      console.log(e);
+      showAlert("Error updating conversations list", "error");
     }
   };
 
@@ -1052,7 +1101,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                         <ConversationCard
                           conversation={convo}
                           index={index}
-                          onDelete={conversationDeletionHandler}
+                          onDelete={() => conversationDeletionHandler(convo.conversation_id)}
                           isActive={
                             convo.conversation_id ==
                               currentConversation?.conversation_id &&
@@ -1109,6 +1158,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               messages={currentMessages}
               user={user}
               onSendMessage={handleSendMessage}
+              loading={false}
             />
           ) : (
             <PipelineContainer
@@ -1117,6 +1167,7 @@ const MainScreen: React.FC<MainScreenInputs> = ({
               showChat={showChat}
               refreshKey={refreshDocuments}
               onDocumentChange={refreshPipelines}
+              onConversationCreated={handleConversationCreated}
             />
           )}
         </Box>
