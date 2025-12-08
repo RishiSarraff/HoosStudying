@@ -18,7 +18,6 @@ const PipelineContainer: React.FC<PipelineContainerProps> = ({
       ) : (
         <PipelineFilesContainer
           key={refreshKey}
-          user={user}
           pipeline={pipeline}
           onDocumentChange={onDocumentChange}
         />

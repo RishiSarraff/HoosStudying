@@ -1,7 +1,7 @@
 import type { PipelineTagProps } from "../types"
 import LabelImportantIcon from '@mui/icons-material/LabelImportant';
 
-const PipelineTag: React.FC<PipelineTagProps> = ({pipeline_tag, index}) => {
+const PipelineTag: React.FC<PipelineTagProps> = ({pipeline_tag}) => {
     return(
         <div style={{ display: 'inline-flex', alignItems: 'center' }}>
             <LabelImportantIcon 

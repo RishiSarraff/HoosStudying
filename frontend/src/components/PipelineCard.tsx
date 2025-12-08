@@ -14,7 +14,6 @@ const PipelineCard: React.FC<PipelineCardProps> = ({
   pipeline_tags = [], 
   index,
   onDelete,
-  systemTag
 }) => {
   const hasTags = pipeline_tags && pipeline_tags.length > 0;
 

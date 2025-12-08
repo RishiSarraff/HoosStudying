@@ -201,7 +201,7 @@ def delete_conversation(db, conversation_id) -> bool:
         
         db.commit()
 
-        return result.rowcount
+        return result.rowcount > 0
 
     except Exception as e:
         db.rollback()

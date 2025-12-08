@@ -22,7 +22,6 @@ import CustomAlert from "./CustomAlert";
 
 
 const PipelineFilesContainer: React.FC<PipelineFilesContainerProps> = ({
-  user,
   pipeline,
   onDocumentChange
 }) => {

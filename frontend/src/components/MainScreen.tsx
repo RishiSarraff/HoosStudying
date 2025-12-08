@@ -314,8 +314,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     }
   };
 
-  const goToSettingsHandler = async () => {};
-
   const handleDocumentUploadSuccess = () => {
     setRefreshDocuments((prev) => prev + 1);
     refreshPipelines();
@@ -523,7 +521,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
   };
 
   const getCategoryColor = (
-    categoryName: string,
     pipelines: MySQLPipeline[]
   ) => {
     const firstPipeline = pipelines[0];
@@ -959,7 +956,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                       <ListItem
                         sx={{
                           backgroundColor: getCategoryColor(
-                            categoryName,
                             pipelines
                           ),
                           px: open ? 2.5 : 0,
@@ -1048,7 +1044,6 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                                       setOpenDeleteModal(true);
                                       setPipelineToDelete(p);
                                     }}
-                                    systemTag={currentCategory}
                                   />
                                 </ListItemButton>
                               ) : (

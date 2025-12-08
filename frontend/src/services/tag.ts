@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { MySQLTag, MySQLMessage } from "../types";
+import type { MySQLTag } from "../types";
 
 export async function createCustomTag(
     token: string,

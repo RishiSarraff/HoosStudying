@@ -16,7 +16,7 @@ const CustomAlert: React.FC<AlertProps> = ({
     if (reason === "clickaway") {
       return;
     }
-
+    console.log(event)
     onClose();
   };
 

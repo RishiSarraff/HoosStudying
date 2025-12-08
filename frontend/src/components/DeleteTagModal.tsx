@@ -1,4 +1,4 @@
-import type { MySQLTag, DeleteTagModalProps } from "../types/index";
+import type { DeleteTagModalProps } from "../types/index";
 import {
   Dialog,
   DialogTitle,

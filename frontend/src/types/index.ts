@@ -94,7 +94,6 @@ export interface PipelineCardProps{
     index: number
     pipeline_tags?: MySQLTag[]
     onDelete: () => void;
-    systemTag: MySQLTag | undefined;
 }
 
 export interface AlertProps {
@@ -114,7 +113,6 @@ export interface PipelineContainerProps{
 }
 
 export interface PipelineFilesContainerProps{
-    user: MySQLUser;
     pipeline: MySQLPipeline;
     onDocumentChange?: () => void;
 }

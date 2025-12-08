@@ -1,6 +1,6 @@
 import axios from 'axios';
 import {type PipelineDocument, type DocumentMetadata} from "../types/index"
-import { getStorage, ref, getDownloadURL, getBlob } from 'firebase/storage';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth'
 
 

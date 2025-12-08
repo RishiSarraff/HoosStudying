@@ -32,3 +32,6 @@ get_embedding_dimension.py
 list_pipelines.py
 test_connection.py
 scripts/
+credentials/
+*.json
+!firebase-credentials.json

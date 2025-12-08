@@ -1,4 +1,4 @@
-import type { MySQLTag, CreateTagModalProps } from "../types/index";
+import type { CreateTagModalProps } from "../types/index";
 import TextField from "@mui/material/TextField";
 import {
   Dialog,
@@ -21,7 +21,7 @@ const CreateTagModal: React.FC<CreateTagModalProps> = ({
 }) => {
   const [tagName, setTagName] = useState<string>('')
   const [tagColor, setTagColor] = useState<string>('#3B82F6')
-  
+
   const colorPresets = [
     '#3B82F6', // Blue
     '#10B981', // Green
