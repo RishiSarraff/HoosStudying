@@ -201,7 +201,7 @@ def delete_conversation(db, conversation_id) -> bool:
         
         db.commit()
 
-        return result.mappings().first() is not None
+        return result.rowcount
 
     except Exception as e:
         db.rollback()
@@ -222,7 +222,7 @@ def delete_all_conversations_for_user(db, user_id) -> int:
         
         db.commit()
 
-        return result.rowcount
+        return result.rowcount > 0
 
     except Exception as e:
         db.rollback()

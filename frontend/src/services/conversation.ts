@@ -44,6 +44,7 @@ export async function getConversations(
           },
         }
       );
+      console.log(response)
       return response.status === 200;
     } catch (error) {
       console.error("Error deleting conversation:", error);

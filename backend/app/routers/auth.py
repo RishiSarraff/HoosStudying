@@ -36,7 +36,6 @@ async def verify_and_sync_user(
         firebase_uid = firebase_user.get("uid")
         email = firebase_user.get("email")
         display_name = firebase_user.get("displayName", "")
-        
 
         if not firebase_uid or not email:
             raise HTTPException(
