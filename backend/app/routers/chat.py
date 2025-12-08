@@ -61,6 +61,7 @@ async def send_chat_message(
             if conversation["user_id"] != user_id:
                 raise HTTPException(status_code=403, detail="Unauthorized")
             conversation_id = request.conversation_id
+            pipeline_id = conversation["pipeline_id"]
         else:
             new_conversation = conversationFunctions.create_conversation(
                 db=db,
@@ -68,6 +69,7 @@ async def send_chat_message(
                 pipeline_id=request.pipeline_id
             )
             conversation_id = new_conversation["conversation_id"]
+            pipeline_id = request.pipeline_id
 
         user_message = messageFunctions.create_user_message(
             db=db,
@@ -88,7 +90,7 @@ async def send_chat_message(
         rag_service = get_rag_service()
         rag_response = rag_service.chat(
             query=request.message_text,
-            pipeline_id=request.pipeline_id,
+            pipeline_id=pipeline_id,
             conversation_history=conversation_history,
             top_k=5
         )

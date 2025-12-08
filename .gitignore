@@ -11,3 +11,10 @@ frontend/.env
 # General
 .DS_Store
 .env
+
+# Deployment files with secrets (keep local only)
+backend/DEPLOYMENT.md
+backend/DEPLOY_WITH_YOUR_VALUES.md
+backend/deploy.sh
+backend/cloudbuild.yaml
+backend/create_firestore_index.sh

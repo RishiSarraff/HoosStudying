@@ -9,13 +9,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-firebase_credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
-if not firebase_credentials_path:
-    raise ValueError("FIREBASE_CREDENTIALS_PATH environment variable is not set")
-
 class FirestoreService:
     
     def __init__(self):
+        firebase_credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
+        if not firebase_credentials_path:
+            raise ValueError("FIREBASE_CREDENTIALS_PATH environment variable is not set")
+        
         if not firebase_admin._apps:
             cred = credentials.Certificate(firebase_credentials_path)
             firebase_admin.initialize_app(cred)
@@ -101,6 +101,35 @@ class FirestoreService:
     def get_embedding(self, document_id: str) -> Optional[Dict[str, Any]]:
         return self.get_document('embeddings', document_id)
     
+    def delete_embeddings_by_file(self, file_name: str, pipeline_id: int) -> int:
+        try:
+            collection = self.db.collection('embeddings')
+            query = collection.where('file_name', '==', file_name).where('pipeline_id', '==', int(pipeline_id))
+            docs = query.stream()
+            
+            deleted_count = 0
+            batch = self.db.batch()
+            batch_count = 0
+            
+            for doc in docs:
+                batch.delete(doc.reference)
+                batch_count += 1
+                deleted_count += 1
+                
+                if batch_count >= 500:
+                    batch.commit()
+                    batch = self.db.batch()
+                    batch_count = 0
+            
+            if batch_count > 0:
+                batch.commit()
+            
+            print(f"Deleted {deleted_count} embeddings for file '{file_name}' in pipeline {pipeline_id}")
+            return deleted_count
+        except Exception as e:
+            print(f"Error deleting embeddings: {str(e)}")
+            return 0
+    
     def get_all_embeddings(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         return self.query_collection('embeddings', limit=limit)
     
@@ -128,7 +157,20 @@ class FirestoreService:
             }
             measure = measure_map.get(distance_measure.upper(), DistanceMeasure.COSINE)
             
-            limit = top_k * 3 if pipeline_id else top_k
+            # CRITICAL FIX: When filtering by pipeline_id, we need a MUCH larger limit
+            # because Firestore's vector search returns results from ALL pipelines,
+            # then we filter afterward. If none of the top results are from our pipeline,
+            # we get 0 results even if embeddings exist!
+            if pipeline_id is not None:
+                # Increased from 15 to 200 to ensure we find relevant documents
+                # TODO: Create composite index for better performance using:
+                # gcloud firestore indexes composite create --collection-group=embeddings \
+                #   --query-scope=COLLECTION \
+                #   --field-config=order=ASCENDING,field-path=pipeline_id \
+                #   --field-config=vector-config='{"dimension":"768","flat": "{}"}',field-path=embedding
+                limit = 200
+            else:
+                limit = top_k
             
             print(f"Searching for embeddings with pipeline_id={pipeline_id}, top_k={top_k}, limit={limit}")
             
@@ -149,6 +191,7 @@ class FirestoreService:
                 data = doc.to_dict()
                 doc_pipeline_id = data.get('pipeline_id')
                 
+                # Filter by pipeline_id after retrieval
                 if pipeline_id is not None:
                     if doc_pipeline_id is None:
                         continue

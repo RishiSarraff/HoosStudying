@@ -8,14 +8,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-firebase_credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
-if not firebase_credentials_path:
-    raise ValueError("FIREBASE_CREDENTIALS_PATH environment variable is not set")
-firebase_storage_bucket = os.getenv('FIREBASE_STORAGE_BUCKET', 'hoosstudying-ab036.firebasestorage.app')
-
 class FirebaseStorageService:
     
     def __init__(self):
+        firebase_credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
+        if not firebase_credentials_path:
+            raise ValueError("FIREBASE_CREDENTIALS_PATH environment variable is not set")
+        
+        firebase_storage_bucket = os.getenv('FIREBASE_STORAGE_BUCKET', 'hoosstudying-ab036.firebasestorage.app')
+        
         if not firebase_admin._apps:
             cred = credentials.Certificate(firebase_credentials_path)
             firebase_admin.initialize_app(cred, {

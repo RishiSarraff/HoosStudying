@@ -24,13 +24,12 @@ const GeneralChatContainer: React.FC<GeneralChatContainerComponents> = ({
     }
 
     const userMessage: MySQLMessage = {
-      message_id: Date.now(), 
+      message_id: Date.now(),
       conversation_id: response.conversation_id,
       sender_type: "user",
       message_text: userText,
       timestamp: new Date(),
     };
-
 
     const botMessage: MySQLMessage = {
       message_id: response.message_id,

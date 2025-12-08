@@ -40,7 +40,7 @@ const App: React.FC = () => {
     const timeoutId = setTimeout(() => {
       console.warn("Auth listener timeout - setting loading to false");
       setLoading(false);
-    }, 10000); 
+    }, 10000);
 
     const unsubscribe = setupAuthListener(
       async (mysqlUser) => {
