@@ -4,11 +4,10 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.services.firebase_auth import verify_firebase_token
+from app.services.firestore_service import FirestoreService
 from app.crudFunctions import userFunctions, documentFunctions, pipelineDocumentFunctions
 from app.database import get_db
 from sqlalchemy import text
-
-from app.crudFunctions import userFunctions
 
 router = APIRouter()
 
@@ -96,6 +95,16 @@ async def deleteDocument(
                 status_code=404,
                 detail="User not found"
             )
+        
+        document = documentFunctions.get_document_by_document_id(db, document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        file_name = document.get("file_name")
+        
+        firestore_service = FirestoreService()
+        deleted_embeddings = firestore_service.delete_embeddings_by_file(file_name, pipeline_id)
+        print(f"Deleted {deleted_embeddings} embeddings from Firestore for document {document_id}")
     
         success = pipelineDocumentFunctions.remove_document_from_pipeline(
             db,
@@ -109,9 +118,13 @@ async def deleteDocument(
                 detail="Pipeline not found"
             )
 
-        return {"success": success, "message": f"Document {document_id} deleted successfully from pipeline {pipeline_id}"}
+        return {
+            "success": success,
+            "message": f"Document {document_id} deleted successfully from pipeline {pipeline_id}",
+            "embeddings_deleted": deleted_embeddings
+        }
 
     except HTTPException as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

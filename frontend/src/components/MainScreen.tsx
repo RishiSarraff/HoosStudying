@@ -48,6 +48,7 @@ import {
   getMessagesForConversation,
 } from "../services/conversation";
 import { getCurrentToken, logout } from "../services/auth";
+import { sendChatMessage } from "../services/chat";
 import { createCustomTag, deleteCustomTag } from "../services/tag";
 import PipelineCard from "./PipelineCard";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -402,13 +403,13 @@ const MainScreen: React.FC<MainScreenInputs> = ({
           setListOfConversations((prev) =>
             prev.filter((c) => c.conversation_id !== conversation_id)
           );
-          
+
           if (currentConversation?.conversation_id === conversation_id) {
             setCurrentConversation(undefined);
             setCurrentMessages(undefined);
             setOpenGeneralPipelineChatPage(true);
           }
-          
+
           showAlert("Successfully Deleted Conversation", "success");
         } else {
           showAlert("Failed to Delete Conversation", "error");
@@ -422,8 +423,23 @@ const MainScreen: React.FC<MainScreenInputs> = ({
 
   const handleSendMessage = async (messageText: string) => {
     if (!currentConversation) return;
-    console.log("Sending:", messageText);
-    await retrieveMessagesFromConvo(currentConversation.conversation_id);
+    try {
+      const token = await getCurrentToken();
+      if (!token) {
+        showAlert("Authentication error", "error");
+        return;
+      }
+      await sendChatMessage(
+        token,
+        messageText,
+        currentConversation.conversation_id,
+        currentConversation.pipeline_id
+      );
+      await retrieveMessagesFromConvo(currentConversation.conversation_id);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      showAlert("Error sending message", "error");
+    }
   };
 
   const handleNewCustomTag = async (data: {
@@ -560,19 +576,21 @@ const MainScreen: React.FC<MainScreenInputs> = ({
     try {
       const token = await getCurrentToken();
       if (token) {
-        const response = await getConversations(token, currentPipeline.pipeline_id);
+        const response = await getConversations(
+          token,
+          currentPipeline.pipeline_id
+        );
         if (response) {
           setListOfConversations(response);
-          
+
           const newConversation = response.find(
             (c) => c.conversation_id === conversationId
           );
-          
+
           if (newConversation) {
             setCurrentConversation(newConversation);
             await retrieveMessagesFromConvo(conversationId);
           }
-  
         }
       }
     } catch (e) {
@@ -1101,7 +1119,9 @@ const MainScreen: React.FC<MainScreenInputs> = ({
                         <ConversationCard
                           conversation={convo}
                           index={index}
-                          onDelete={() => conversationDeletionHandler(convo.conversation_id)}
+                          onDelete={() =>
+                            conversationDeletionHandler(convo.conversation_id)
+                          }
                           isActive={
                             convo.conversation_id ==
                               currentConversation?.conversation_id &&
